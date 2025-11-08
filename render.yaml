@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: eoipwoxy
+    runtime: docker
+    repo: https://gitlab.com/neterer/teder7.git
+    region: oregon
+    plan: free
+    branch: main
+    healthCheckPath: /health
+    dockerfilePath: ./docker/render/Dockerfile   
