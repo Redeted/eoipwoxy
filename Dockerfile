@@ -1,15 +1,32 @@
 FROM node:18-bullseye-slim
+
+# Install any required system packages
 RUN apt-get update && \
-    apt-get install -y git
-RUN git clone https://github.com/Redeted/eoipwoxy.git /app
+    apt-get install -y git && \
+    rm -rf /var/lib/apt/lists/*
+
+# Create the app directory
 WORKDIR /app
+
+# Copy all project files into the container
+COPY . .
+
+# Ensure necessary permissions, if needed
 RUN chown -R 1000:1000 /app
 USER 1000
+
+# Install npm dependencies
 RUN npm install
-COPY Dockerfile greeting.md* .env* ./
+
+# Build the app
 RUN npm run build
-EXPOSE 7860
+
+# Set environment variables
 ENV NODE_ENV=production
-# Huggigface free VMs have 16GB of RAM so we can be greedy
 ENV NODE_OPTIONS="--max-old-space-size=512"
+
+# Expose the port your app uses
+EXPOSE 7860
+
+# Start the app
 CMD [ "npm", "start" ]
