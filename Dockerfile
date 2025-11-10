@@ -23,7 +23,6 @@ RUN npm run build
 
 # Set environment variables
 ENV NODE_ENV=production
-ENV NODE_OPTIONS="--max-old-space-size=512"
 
 # Expose the port your app uses
 EXPOSE 7860
