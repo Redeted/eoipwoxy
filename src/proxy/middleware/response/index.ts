@@ -880,6 +880,7 @@ async function handleGoogleAIRateLimitError(
           { key: req.key.hash, error: text },
           "Google API key appears to be completely disabled and will be removed from rotation."
         );
+        keyPool.markRateLimited(req.key!);
         await reenqueueRequest(req);
         throw new RetryableError("Google API key inoperative, retrying with different key.");
 
