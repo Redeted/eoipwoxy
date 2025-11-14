@@ -33,6 +33,7 @@ export type OpenAIModelFamily =
   | "gpt41-nano"
   | "gpt45"
   | "gpt5"
+  | "gpt51"
   | "gpt5-mini"
   | "gpt5-nano"
   | "gpt5-chat-latest"
@@ -102,6 +103,7 @@ export const MODEL_FAMILIES = (<A extends readonly ModelFamily[]>(
   "gpt41-mini",
   "gpt41-nano",
   "gpt5",
+  "gpt51",
   "gpt5-mini",
   "gpt5-nano",
   "gpt5-chat-latest",
@@ -196,6 +198,7 @@ export const MODEL_FAMILY_SERVICE: {
   "gpt41-mini": "openai",
   "gpt41-nano": "openai",
   gpt5: "openai",
+  gpt51: "openai",
   "gpt5-mini": "openai",
   "gpt5-nano": "openai",
   "gpt5-chat-latest": "openai",
@@ -230,6 +233,7 @@ export const MODEL_FAMILY_SERVICE: {
   "azure-gpt41-mini": "azure",
   "azure-gpt41-nano": "azure",
   "azure-gpt5": "azure",
+  "azure-gpt51": "azure",
   "azure-gpt5-mini": "azure",
   "azure-gpt5-nano": "azure",
   "azure-gpt5-chat-latest": "azure",
@@ -257,6 +261,7 @@ export const IMAGE_GEN_MODELS: ModelFamily[] = ["dall-e", "azure-dall-e", "gpt-i
 
 export const OPENAI_MODEL_FAMILY_MAP: { [regex: string]: OpenAIModelFamily } = {
   "^gpt-image(-\\d+)?(-preview)?(-\\d{4}-\\d{2}-\\d{2})?$": "gpt-image",
+  "^gpt-5\\.1(-\\d{4}-\\d{2}-\\d{2})?$": "gpt51",
   "^gpt-5(-\\d{4}-\\d{2}-\\d{2})?$": "gpt5",
   "^gpt-5-mini(-\\d{4}-\\d{2}-\\d{2})?$": "gpt5-mini",
   "^gpt-5-nano(-\\d{4}-\\d{2}-\\d{2})?$": "gpt5-nano",

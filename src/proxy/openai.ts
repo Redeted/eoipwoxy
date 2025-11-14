@@ -493,7 +493,7 @@ function filterGPT5UnsupportedParams(req: Request) {
   const model = req.body.model;
   
   // Only apply filtering to these specific models (gpt5-chat-latest supports all params)
-  const restrictedModels = /^gpt-5(-mini|-nano)?(-\d{4}-\d{2}-\d{2})?$/;
+  const restrictedModels = /^gpt-5(\\.1)?(-mini|-nano)?(-\d{4}-\d{2}-\d{2})?$/;
   
   if (!restrictedModels.test(model)) {
     return; // Not a restricted model, no filtering needed

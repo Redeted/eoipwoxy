@@ -67,6 +67,12 @@ export const validateContextSize: RequestPreprocessor = async (req) => {
     modelMax = 1000000;
   } else if (model.match(/^gpt-4\.1-nano(-\d{4}-\d{2}-\d{2})?$/)) {
     modelMax = 1000000;
+  } else if (model.match(/^gpt-5\.1(-\d{4}-\d{2}-\d{2})?$/)) {
+    modelMax = 400000;
+  } else if (model.match(/^gpt-5\.1-mini(-\d{4}-\d{2}-\d{2})?$/)) {
+    modelMax = 400000;
+  } else if (model.match(/^gpt-5\.1-nano(-\d{4}-\d{2}-\d{2})?$/)) {
+    modelMax = 400000;
   } else if (model.match(/^gpt-5(-\d{4}-\d{2}-\d{2})?$/)) {
     modelMax = 400000;
   } else if (model.match(/^gpt-5-mini(-\d{4}-\d{2}-\d{2})?$/)) {

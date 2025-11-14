@@ -77,7 +77,7 @@ export const OpenAIV1ChatCompletionSchema = z
     functions: z.array(z.any()).optional(),
     tool_choice: z.any().optional(),
     function_choice: z.any().optional(),
-    reasoning_effort: z.enum(["minimal", "low", "medium", "high"]).optional(),
+    reasoning_effort: z.enum(["none", "minimal", "low", "medium", "high"]).optional(),
     verbosity: z.enum(["low", "medium", "high"]).optional(),
     response_format: z.any(),
   })

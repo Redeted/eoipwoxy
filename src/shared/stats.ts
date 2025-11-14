@@ -14,6 +14,8 @@ const MODEL_PRICING: Record<ModelFamily, { input: number; output: number } | und
   "azure-gpt41-nano": { input: 0.10, output: 0.40 },
   "gpt5": { input: 1.25, output: 10.00 },
   "azure-gpt5": { input: 1.25, output: 10.00 },
+  "gpt51": { input: 1.25, output: 10.00 },
+  "azure-gpt51": { input: 1.25, output: 10.00 },
   "gpt5-mini": { input: 0.25, output: 2.00 },
   "azure-gpt5-mini": { input: 0.25, output: 2.00 },
   "gpt5-nano": { input: 0.05, output: 0.40 },

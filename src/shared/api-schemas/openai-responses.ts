@@ -20,7 +20,7 @@ export const OpenAIV1ResponsesSchema = z.object({
   frequency_penalty: z.number().min(-2).max(2).optional(),
   user: z.string().optional(),
   tools: z.array(z.any()).optional(),
-  reasoning_effort: z.enum(["low", "medium", "high"]).optional(),
+  reasoning_effort: z.enum(["none", "low", "medium", "high"]).optional(),
 });
 
 // Allow transforming from OpenAI Chat to Responses format
