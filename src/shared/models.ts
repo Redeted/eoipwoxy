@@ -145,6 +145,7 @@ export const MODEL_FAMILIES = (<A extends readonly ModelFamily[]>(
   "azure-gpt41-mini",
   "azure-gpt41-nano",
   "azure-gpt5",
+  "azure-gpt51",
   "azure-gpt5-mini",
   "azure-gpt5-nano",
   "azure-gpt5-chat-latest",
