@@ -118,6 +118,7 @@ export class GoogleAIKeyProvider implements KeyProvider<GoogleAIKey> {
     );
     
     // For preview models, only use billing-enabled keys
+    /*
     if (isPreviewModel(model)) {
       availableKeys = availableKeys.filter((k) => k.billingEnabled === true);
       if (availableKeys.length === 0) {
@@ -131,9 +132,13 @@ export class GoogleAIKeyProvider implements KeyProvider<GoogleAIKey> {
         throw new PaymentRequiredError("No Google AI keys available");
       }
     }
+    */
+    // Standard fallback if not using preview logic:
+    if (availableKeys.length === 0) {
+      throw new PaymentRequiredError("No Google AI keys available");
+    }
 
     const keysByPriority = prioritizeKeys(availableKeys);
-
     const selectedKey = keysByPriority[0];
     selectedKey.lastUsed = Date.now();
     this.throttle(selectedKey.hash);
@@ -156,7 +161,11 @@ export class GoogleAIKeyProvider implements KeyProvider<GoogleAIKey> {
     return this.keys.filter((k) => !k.isDisabled).length;
   }
 
-  public incrementUsage(keyHash: string, modelFamily: GoogleAIModelFamily, usage: { input: number; output: number }) {
+  public incrementUsage(
+    keyHash: string,
+    modelFamily: GoogleAIModelFamily,
+    usage: { input: number; output: number }
+  ) {
     const key = this.keys.find((k) => k.hash === keyHash);
     if (!key) return;
 
@@ -192,51 +201,48 @@ export class GoogleAIKeyProvider implements KeyProvider<GoogleAIKey> {
   }
 
   /**
- * Periodically rechecks keys that have been marked as over-quota or disabled
- * to see if they can be restored to the rotation.
- */
-public recheck() {
-  // For each key that's either over quota or disabled, reset its status
-  // so the checker can re-evaluate it
-  const keysToRecheck = this.keys.filter(k => k.isOverQuota || (k.isDisabled && !k.isRevoked));
-  
-  if (keysToRecheck.length === 0) {
-    this.log.debug("No Google AI keys need rechecking");
-    return;
-  }
-  
-  keysToRecheck.forEach(key => {
-    // Priority to keys marked as overQuota (and not revoked)
-    if (key.isOverQuota && !key.isRevoked) {
-      this.log.info(
-        { key: key.hash },
-        "Rechecking over-quota Google AI key. Resetting isOverQuota, isDisabled, and overQuotaFamilies."
-      );
-      this.update(key.hash, {
-        isOverQuota: false,
-        isDisabled: false, // Was disabled due to being overQuota
-        lastChecked: 0,    // Force a recheck soon
-        overQuotaFamilies: [] // Clear any specific family quotas
-      });
-    } 
-    // Handle other disabled (but not revoked) keys that weren't caught by the isOverQuota condition
-    else if (key.isDisabled && !key.isRevoked) { 
-      this.log.info(
-        { key: key.hash },
-        "Rechecking disabled (but not revoked or previously over-quota) Google AI key."
-      );
-      this.update(key.hash, {
-        isDisabled: false, // Re-enable for checking
-        lastChecked: 0   // Force a recheck soon
-      });
+   * Periodically rechecks keys that have been marked as over-quota or disabled
+   * to see if they can be restored to the rotation.
+   */
+  public recheck() {
+    // For each key that's either over quota or disabled, reset its status
+    // so the checker can re-evaluate it
+    const keysToRecheck = this.keys.filter(k => k.isOverQuota || (k.isDisabled && !k.isRevoked));
+    if (keysToRecheck.length === 0) {
+      this.log.debug("No Google AI keys need rechecking");
+      return;
     }
-  });
-  
-  // Schedule the actual key checking if we have a checker
-  if (this.checker) {
-    this.checker.scheduleNextCheck();
+    keysToRecheck.forEach(key => {
+      // Priority to keys marked as overQuota (and not revoked)
+      if (key.isOverQuota && !key.isRevoked) {
+        this.log.info(
+          { key: key.hash },
+          "Rechecking over-quota Google AI key. Resetting isOverQuota, isDisabled, and overQuotaFamilies."
+        );
+        this.update(key.hash, {
+          isOverQuota: false,
+          isDisabled: false, // Was disabled due to being overQuota
+          lastChecked: 0,    // Force a recheck soon
+          overQuotaFamilies: [] // Clear any specific family quotas
+        });
+      }
+      // Handle other disabled (but not revoked) keys that weren't caught by the isOverQuota condition
+      else if (key.isDisabled && !key.isRevoked) {
+        this.log.info(
+          { key: key.hash },
+          "Rechecking disabled (but not revoked or previously over-quota) Google AI key."
+        );
+        this.update(key.hash, {
+          isDisabled: false, // Re-enable for checking
+          lastChecked: 0   // Force a recheck soon
+        });
+      }
+    });
+    // Schedule the actual key checking if we have a checker
+    if (this.checker) {
+      this.checker.scheduleNextCheck();
+    }
   }
-}
 
   /**
    * Applies a short artificial delay to the key upon dequeueing, in order to

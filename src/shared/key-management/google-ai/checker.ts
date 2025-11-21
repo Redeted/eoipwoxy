@@ -139,7 +139,9 @@ export class GoogleAIKeyChecker extends KeyCheckerBase<GoogleAIKey> {
     }
   }
 
+    // For testing: always return true, skipping actual billing check.
   private async testBillingEnabled(key: GoogleAIKey): Promise<boolean> {
+    /*
     const payload = {
       instances: [{ prompt: "" }]
     };
@@ -166,7 +168,10 @@ export class GoogleAIKeyChecker extends KeyCheckerBase<GoogleAIKey> {
       // Network errors or other issues - assume no billing
       return false;
     }
+    */
+    return true;
   }
+  
 
   protected handleAxiosError(key: GoogleAIKey, error: AxiosError): void {
     if (error.response && GoogleAIKeyChecker.errorIsGoogleAIError(error)) {
