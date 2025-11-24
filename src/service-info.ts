@@ -164,6 +164,7 @@ type ModelAggregates = {
   awsSonnet4_5?: number;
   awsOpus3?: number;
   awsOpus4_1?: number;
+  awsOpus4_5?: number;
   awsOpus4?: number;
   awsHaiku3?: number;
   awsHaiku3_5?: number;
@@ -555,6 +556,9 @@ function addKeyToAggregates(k: KeyPoolKey) {
           } else if (id.includes("opus-4-1")) {
             addToFamily(`aws-claude__awsOpus4_1`, 1);
             addToFamily(`aws-claude-opus__awsOpus4_1`, 1);
+		  } else if (id.includes("opus-4-5")) {
+            addToFamily(`aws-claude__awsOpus4_5`, 1);
+            addToFamily(`aws-claude-opus__awsOpus4_5`, 1);
           } else if (id.includes("opus-4")) {
             addToFamily(`aws-claude__awsOpus4`, 1);
             addToFamily(`aws-claude-opus__awsOpus4`, 1);
@@ -741,6 +745,7 @@ function getInfoForFamily(family: ModelFamily): BaseFamilyInfo {
           if (familyStats.get(`${family}__awsOpus3`) || 0) variants.add("opus3");
           if (familyStats.get(`${family}__awsOpus4`) || 0) variants.add("opus4");
           if (familyStats.get(`${family}__awsOpus4_1`) || 0) variants.add("opus4.1");
+		  if (familyStats.get(`${family}__awsOpus4_5`) || 0) variants.add("opus4.5");
 
           info.enabledVariants = variants.size ? Array.from(variants).join(",") : undefined;
 
