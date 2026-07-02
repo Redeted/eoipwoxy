@@ -11,12 +11,12 @@ const KEY_CHECK_PERIOD = 6 * 60 * 60 * 1000; // 3 hours
 const LIST_MODELS_URL =
   "https://generativelanguage.googleapis.com/v1beta/models";
 const GENERATE_CONTENT_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=%KEY%";
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=%KEY%";
 const PRO_MODEL_ID = "gemini-2.5-pro";
 const GENERATE_PRO_CONTENT_URL =
   `https://generativelanguage.googleapis.com/v1beta/models/${PRO_MODEL_ID}:generateContent?key=%KEY%`;
 const IMAGEN_BILLING_TEST_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=%KEY%";
+  "https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=%KEY%";
 
 type ListModelsResponse = {
   models: {
@@ -139,9 +139,7 @@ export class GoogleAIKeyChecker extends KeyCheckerBase<GoogleAIKey> {
     }
   }
 
-    // For testing: always return true, skipping actual billing check.
   private async testBillingEnabled(key: GoogleAIKey): Promise<boolean> {
-    /*
     const payload = {
       instances: [{ prompt: "" }]
     };
@@ -168,10 +166,7 @@ export class GoogleAIKeyChecker extends KeyCheckerBase<GoogleAIKey> {
       // Network errors or other issues - assume no billing
       return false;
     }
-    */
-    return true;
   }
-  
 
   protected handleAxiosError(key: GoogleAIKey, error: AxiosError): void {
     if (error.response && GoogleAIKeyChecker.errorIsGoogleAIError(error)) {
@@ -199,10 +194,10 @@ export class GoogleAIKeyChecker extends KeyCheckerBase<GoogleAIKey> {
           // If it's a 400 but not a key-revoking message, treat as transient.
           this.log.warn(
             { key: key.hash, error: text, errorCode: code, httpStatus },
-            "Key check returned a generic 400 error. Treating as transient. Rechecking in 1 minute."
+            "Key check returned a generic 400 error. Treating as transient. Rechecking in 5 minutes."
           );
-          const recheckInOneMinute = Date.now() - (KEY_CHECK_PERIOD - 60 * 1000);
-          this.updateKey(key.hash, { lastChecked: recheckInOneMinute });
+          const recheckInFiveMinutes = Date.now() - (KEY_CHECK_PERIOD - 5 * 60 * 1000);
+          this.updateKey(key.hash, { lastChecked: recheckInFiveMinutes });
           return;
         }
         case 401: // Unauthorized
@@ -233,9 +228,9 @@ export class GoogleAIKeyChecker extends KeyCheckerBase<GoogleAIKey> {
           // Transient 429 (e.g., TPM/RPM exceeded)
           this.log.warn(
             { key: key.hash, status, code, message, details, httpStatus },
-            "Key is temporarily rate limited (429). Rechecking key in 1 minute."
+            "Key is temporarily rate limited (429). Rechecking key in 5 minutes."
           );
-          const nextTransient429 = Date.now() - (KEY_CHECK_PERIOD - 60 * 1000);
+          const nextTransient429 = Date.now() - (KEY_CHECK_PERIOD - 5 * 60 * 1000);
           this.updateKey(key.hash, { lastChecked: nextTransient429 });
           return;
         }
@@ -244,9 +239,9 @@ export class GoogleAIKeyChecker extends KeyCheckerBase<GoogleAIKey> {
         case 504: // Deadline Exceeded
           this.log.warn(
             { key: key.hash, status, code, message, details, httpStatus },
-            `Key check encountered a server-side error (${httpStatus}). Treating as transient. Rechecking in 1 minute.`
+            `Key check encountered a server-side error (${httpStatus}). Treating as transient. Rechecking in 5 minutes.`
           );
-          const recheck5xx = Date.now() - (KEY_CHECK_PERIOD - 60 * 1000);
+          const recheck5xx = Date.now() - (KEY_CHECK_PERIOD - 5 * 60 * 1000);
           this.updateKey(key.hash, { lastChecked: recheck5xx });
           return;
       }
@@ -254,9 +249,9 @@ export class GoogleAIKeyChecker extends KeyCheckerBase<GoogleAIKey> {
       // Fallthrough for other unexpected Google AI API errors
       this.log.error(
         { key: key.hash, status, code, message, details, httpStatus },
-        "Encountered unexpected Google AI error status while checking key. This may indicate a change in the API. Rechecking in 1 minute."
+        "Encountered unexpected Google AI error status while checking key. This may indicate a change in the API. Rechecking in 5 minutes."
       );
-      const recheckUnexpected = Date.now() - (KEY_CHECK_PERIOD - 60 * 1000);
+      const recheckUnexpected = Date.now() - (KEY_CHECK_PERIOD - 5 * 60 * 1000);
       this.updateKey(key.hash, { lastChecked: recheckUnexpected });
       return;
     }
@@ -264,9 +259,9 @@ export class GoogleAIKeyChecker extends KeyCheckerBase<GoogleAIKey> {
     // Network errors (not HTTP errors from Google AI)
     this.log.error(
       { key: key.hash, error: error.message },
-      "Network error while checking key; trying this key again in 1 minute."
+      "Network error while checking key; trying this key again in 5 minutes."
     );
-    const recheckNetworkError = Date.now() - (KEY_CHECK_PERIOD - 60 * 1000); // Corrected to 60 * 1000
+    const recheckNetworkError = Date.now() - (KEY_CHECK_PERIOD - 5 * 60 * 1000);
     return this.updateKey(key.hash, { lastChecked: recheckNetworkError });
   }
 

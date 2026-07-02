@@ -157,6 +157,13 @@ async function start() {
 
   keyPool.init();
 
+  // Initialize OpenRouter cache if OpenRouter keys are configured
+  const openrouterKeys = keyPool.list().filter(k => k.service === "openrouter");
+  if (openrouterKeys.length > 0) {
+    const { initializeOpenRouterCache } = require("./proxy/openrouter");
+    await initializeOpenRouterCache();
+  }
+
   await initTokenizers();
 
   if (config.allowedModelFamilies.some((f) => IMAGE_GEN_MODELS.includes(f))) {

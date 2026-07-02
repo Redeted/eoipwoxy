@@ -14,8 +14,6 @@ const MODEL_PRICING: Record<ModelFamily, { input: number; output: number } | und
   "azure-gpt41-nano": { input: 0.10, output: 0.40 },
   "gpt5": { input: 1.25, output: 10.00 },
   "azure-gpt5": { input: 1.25, output: 10.00 },
-  "gpt51": { input: 1.25, output: 10.00 },
-  "azure-gpt51": { input: 1.25, output: 10.00 },
   "gpt5-mini": { input: 0.25, output: 2.00 },
   "azure-gpt5-mini": { input: 0.25, output: 2.00 },
   "gpt5-nano": { input: 0.05, output: 0.40 },
@@ -24,6 +22,10 @@ const MODEL_PRICING: Record<ModelFamily, { input: number; output: number } | und
   "azure-gpt5-chat-latest": { input: 1.25, output: 10.00 },
   "gpt5-pro": { input: 15.00, output: 120.00 },
   "azure-gpt5-pro": { input: 15.00, output: 120.00 },
+  "gpt51": { input: 1.25, output: 10.00 },
+  "gpt51-chat-latest": { input: 1.25, output: 10.00 },
+  "azure-gpt51": { input: 1.25, output: 10.00 },
+  "azure-gpt51-chat-latest": { input: 1.25, output: 10.00 },
   "gpt45": { input: 75.00, output: 150.00 }, // Example, needs verification if this model family is still current with this pricing
   "azure-gpt45": { input: 75.00, output: 150.00 }, // Example, needs verification
   "gpt4o": { input: 2.50, output: 10.00 },
@@ -55,13 +57,17 @@ const MODEL_PRICING: Record<ModelFamily, { input: number; output: number } | und
   "dall-e": { input: 0, output: 0 }, // Pricing is per image, not token based in this context.
   "azure-dall-e": { input: 0, output: 0 }, // Pricing is per image.
   "gpt-image": { input: 0, output: 0 }, // Complex pricing (text, image input, image output tokens), handle separately.
+  "gpt-image-2": { input: 0, output: 0 }, // Complex pricing (text, image input, image output tokens), handle separately.
   "azure-gpt-image": { input: 0, output: 0 }, // Complex pricing.
+  "azure-gpt-image-2": { input: 0, output: 0 }, // Complex pricing.
   "claude": { input: 3.00, output: 15.00 }, // Anthropic Claude Sonnet 4
   "aws-claude": { input: 3.00, output: 15.00 },
   "gcp-claude": { input: 3.00, output: 15.00 },
   "claude-opus": { input: 15.00, output: 75.00 }, // Anthropic Claude Opus 4
   "aws-claude-opus": { input: 15.00, output: 75.00 },
   "gcp-claude-opus": { input: 15.00, output: 75.00 },
+  "gcp-gemini-flash": { input: 0.15, output: 0.60 }, // Gemini 2.5/3.1 Flash via Vertex AI
+  "gcp-gemini-pro": { input: 1.25, output: 10.00 }, // Gemini 2.5/3.1 Pro via Vertex AI
   "mistral-tiny": { input: 0.04, output: 0.04 }, // Using old price if no new API price found
   "aws-mistral-tiny": { input: 0.04, output: 0.04 },
   "mistral-small": { input: 0.10, output: 0.30 }, // Mistral Small 3.1
@@ -77,10 +83,46 @@ const MODEL_PRICING: Record<ModelFamily, { input: number; output: number } | und
   // Adding placeholders for families in models.ts but not yet priced here.
   "cohere": { input: 0.15, output: 0.60 }, // Updated to Command R
   "qwen": { input: 1.60, output: 6.40 }, // Qwen-max based pricing: $1.6 input, $6.4 output per 1M tokens
-  "moonshot": { input: 0.6, output: 2.5 }, // Moonshot kimi k2
+  "moonshot": { input: 0.6, output: 2.5 }, // <--- ИСПРАВЛЕНО: Добавлена Moonshot
+  "groq": { input: 0.20, output: 0.80 }, // Default Groq pricing (for backward compatibility)
+  // Groq model pricing based on provided data
+  "groq-allam-2-7b": { input: 0.10, output: 0.10 }, // Estimated pricing for Allam 2B model
+  "groq-compound": { input: 0.15, output: 0.15 }, // Estimated pricing for Groq Compound model
+  "groq-compound-mini": { input: 0.08, output: 0.08 }, // Estimated pricing for Compound Mini
+  "groq-llama-4-maverick-17b-128e-instruct": { input: 0.20, output: 0.60 }, // Meta Llama 4 Maverick 17B
+  "groq-llama-4-scout-17b-16e-instruct": { input: 0.11, output: 0.34 }, // Meta Llama 4 Scout 17B
+  "groq-llama-guard-4-12b": { input: 0.20, output: 0.20 }, // Meta Llama Guard 4 12B
+  "groq-llama-prompt-guard-2-22m": { input: 0.03, output: 0.03 }, // Meta Llama Prompt Guard 2 22M
+  "groq-llama-prompt-guard-2-86m": { input: 0.04, output: 0.04 }, // Meta Llama Prompt Guard 2 86M
+  "groq-llama-3.3-70b-versatile": { input: 0.59, output: 0.79 }, // Meta Llama 3.3 70B
+  "groq-llama-3.1-8b-instant": { input: 0.05, output: 0.08 }, // Meta Llama 3.1 8B
+  "groq-kimi-k2-instruct": { input: 0.50, output: 0.50 }, // Estimated pricing for Kimi K2
+  "groq-kimi-k2-instruct-0905": { input: 1.00, output: 3.00 }, // Moonshot AI Kimi K2 0905
+  "groq-gpt-oss-safeguard-20b": { input: 0.075, output: 0.30 }, // OpenAI Safety GPT OSS 20B
+  "groq-gpt-oss-120b": { input: 0.15, output: 0.60 }, // OpenAI GPT OSS 120B
+  "groq-gpt-oss-20b": { input: 0.075, output: 0.30 }, // OpenAI GPT OSS 20B
+  "groq-qwen3-32b": { input: 0.29, output: 0.59 }, // Alibaba Cloud Qwen3-32B
+  "openrouter-paid": { input: 5.00, output: 20.00 }, // Average price for paid models
+  "openrouter-free": { input: 0.00, output: 0.00 }, // Free models 
 };
 
-export function getTokenCostDetailsUsd(model: ModelFamily, inputTokens: number, outputTokens?: number): { inputCost: number, outputCost: number, totalCost: number } {
+export function getTokenCostDetailsUsd(model: ModelFamily, inputTokens: number, outputTokens?: number, modelId?: string): { inputCost: number, outputCost: number, totalCost: number } {
+  // Special handling for OpenRouter models to use real-time pricing
+  if ((model === "openrouter-paid" || model === "openrouter-free") && modelId) {
+    try {
+      const { getOpenRouterModelPricing } = require("../proxy/openrouter");
+      const orPricing = getOpenRouterModelPricing(modelId);
+      if (orPricing) {
+        const inputCost = (orPricing.input / 1_000_000) * Math.max(0, inputTokens);
+        const outputCost = (orPricing.output / 1_000_000) * Math.max(0, outputTokens ?? 0);
+        return { inputCost, outputCost, totalCost: inputCost + outputCost };
+      }
+    } catch (error) {
+      // Fall back to default pricing if we can't get real-time pricing
+      console.warn(`Failed to get OpenRouter pricing for ${modelId}, using default pricing`);
+    }
+  }
+
   const pricing = MODEL_PRICING[model];
 
   if (!pricing) {

@@ -101,7 +101,6 @@ function applyOpenAIResponsesTransform(req: Request): void {
         }));
       }
     }
-
     // Handle reasoning_effort for models that require it
     const model = req.body.model || "";
     const isO3Pro = model === "o3-pro" || model.startsWith("o3-pro-");

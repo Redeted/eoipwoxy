@@ -13,7 +13,7 @@ import {
 import { ProxyResHandlerWithBody } from "./middleware/response";
 import { createQueuedProxyMiddleware } from "./middleware/request/proxy-middleware-factory";
 import { ProxyReqManager } from "./middleware/request/proxy-req-manager";
-import { validateClaude41OpusParameters } from "../shared/claude-4-1-validation";
+import { validateSupportForTopPAndTemp } from "../shared/claude-4-1-validation";
 
 const awsBlockingResponseHandler: ProxyResHandlerWithBody = async (
   _proxyRes,
@@ -77,7 +77,7 @@ function transformAwsTextResponseToOpenAI(
   };
 }
 
-// Legacy Claude models that should NOT receive the global. prefix
+// Legacy Claude models that should NOT receive any cross-region prefix
 const LEGACY_CLAUDE_MODELS = [
   "anthropic.claude-instant-v1",
   "anthropic.claude-v2",
@@ -92,25 +92,38 @@ const LEGACY_CLAUDE_MODELS = [
   "anthropic.claude-sonnet-4-20250514-v1:0",
   "anthropic.claude-opus-4-20250514-v1:0",
   "anthropic.claude-opus-4-1-20250805-v1:0",
-  "anthropic.claude-opus-4-5-20251101-v1:0",
 ];
 
-const addGlobalPrefixForClaude45Models = (manager: ProxyReqManager) => {
+// Models that require the us. prefix instead of global.
+const US_PREFIX_MODELS = [
+  "anthropic.claude-opus-4-6-v1",
+  "anthropic.claude-opus-4-7",
+  "anthropic.claude-opus-4-8",
+];
+
+const addCrossRegionPrefixForModels = (manager: ProxyReqManager) => {
   const req = manager.request;
   const model = req.body.model;
 
-  // Return early if model already has global. prefix
-  if (model.startsWith('global.')) {
+  // Return early if model already has a cross-region prefix
+  if (model.startsWith('global.') || model.startsWith('us.') || model.startsWith('eu.')) {
     return;
   }
 
-  // Never add global. prefix to Mistral models
+  // Never add prefix to Mistral models
   if (model.startsWith('mistral.')) {
     return;
   }
 
-  // Return early if model is in the legacy exclusion list
+  // Return early if model is in the legacy exclusion list (no prefix needed)
   if (LEGACY_CLAUDE_MODELS.includes(model)) {
+    return;
+  }
+
+  // Add us. prefix for models that require it
+  if (US_PREFIX_MODELS.includes(model)) {
+    const newBody = { ...req.body, model: 'us.' + model };
+    manager.setBody(newBody);
     return;
   }
 
@@ -126,7 +139,7 @@ const awsClaudeProxy = createQueuedProxyMiddleware({
     if (!signedRequest) throw new Error("Must sign request before proxying");
     return `${signedRequest.protocol}//${signedRequest.hostname}`;
   },
-  mutations: [addGlobalPrefixForClaude45Models, signAwsRequest, finalizeSignedRequest],
+  mutations: [addCrossRegionPrefixForModels, signAwsRequest, finalizeSignedRequest],
   blockingResponseHandler: awsBlockingResponseHandler,
 });
 
@@ -224,7 +237,7 @@ awsClaudeRouter.post(
  */
 function maybeReassignModel(req: Request) {
   // Validate Claude 4.1 Opus parameters before processing
-  validateClaude41OpusParameters(req);
+  validateSupportForTopPAndTemp(req);
   
   const model = req.body.model;
 
@@ -397,10 +410,31 @@ function maybeReassignModel(req: Request) {
         case "sonnet":
           req.body.model = "anthropic.claude-sonnet-4-5-20250929-v1:0";
           return;
-		case "opus":
+        case "opus":
           req.body.model = "anthropic.claude-opus-4-5-20251101-v1:0";
           return;
         // No opus variant for 4.5 yet
+      }
+      break;
+    case "4.6":
+      switch (name) {
+        case "opus":
+          req.body.model = "anthropic.claude-opus-4-6-v1";
+          return;
+      }
+      break;
+    case "4.7":
+      switch (name) {
+        case "opus":
+          req.body.model = "anthropic.claude-opus-4-7";
+          return;
+      }
+      break;
+    case "4.8":
+      switch (name) {
+        case "opus":
+          req.body.model = "anthropic.claude-opus-4-8";
+          return;
       }
       break;
   }

@@ -15,7 +15,7 @@ const AnthropicV1BaseSchema = z
     model: z.string().max(100),
     stop_sequences: z.array(z.string().max(500)).optional(),
     stream: z.boolean().optional().default(false),
-    temperature: z.coerce.number().optional().default(1),
+    temperature: z.coerce.number().optional(),
     top_k: z.coerce.number().optional(),
     top_p: z.coerce.number().optional(),
     metadata: z.object({ user_id: z.string().optional() }).optional(),

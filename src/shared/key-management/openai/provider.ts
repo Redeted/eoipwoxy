@@ -97,6 +97,8 @@ export class OpenAIKeyProvider implements KeyProvider<OpenAIKey> {
           "gpt5-mini" as const,
           "gpt5-nano" as const,
           "gpt5-chat-latest" as const,
+        "gpt51" as const,
+        "gpt51-chat-latest" as const,
         ],
         isTrial: false,
         isDisabled: false,
@@ -147,7 +149,7 @@ export class OpenAIKeyProvider implements KeyProvider<OpenAIKey> {
     const isGptImageRequest = neededFamily === "gpt-image";
     
     // GPT-5 models (gpt-5, gpt-5-mini, gpt-5-nano) require verified keys for streaming
-    const isGpt5Model = /^gpt-5(\\.1)?(-mini|-nano)?(-\d{4}-\d{2}-\d{2})?$/.test(model);
+    const isGpt5Model = /^gpt-5(-mini|-nano)?(-\d{4}-\d{2}-\d{2})?$/.test(model);
     const isO1Model = /^o1(-mini|-preview)?(-\d{4}-\d{2}-\d{2})?$/.test(model);
     const isO3Model = /^o3(-mini)?(-\d{4}-\d{2}-\d{2})?$/.test(model);
     const isO4MiniModel = /^o4-mini(-\d{4}-\d{2}-\d{2})?$/.test(model);

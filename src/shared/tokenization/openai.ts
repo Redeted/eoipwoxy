@@ -179,7 +179,7 @@ export const DALLE_TOKENS_PER_DOLLAR = 100000;
  * which we convert to tokens at a rate of 100000 tokens per dollar.
  */
 export function getOpenAIImageCost(params: {
-  model: "dall-e-2" | "dall-e-3" | "gpt-image-1";
+  model: "dall-e-2" | "dall-e-3" | "gpt-image-1"  | "gpt-image-2";
   quality: "standard" | "hd" | "high" | "medium" | "low" | "auto";
   resolution: "512x512" | "256x256" | "1024x1024" | "1024x1792" | "1792x1024" | "1536x1024" | "1024x1536" | "auto";
   n: number | null;
@@ -209,6 +209,7 @@ export function getOpenAIImageCost(params: {
             throw new Error("Invalid resolution");
         }
       case "gpt-image-1":
+      case "gpt-image-2":
         // gpt-image-1 pricing is approximately $0.04 per image
         // This is a simplified pricing model, adjust as needed based on official pricing
         return 0.04;

@@ -9,7 +9,7 @@ import {
 } from "./middleware/request";
 import { ProxyResHandlerWithBody } from "./middleware/response";
 import { createQueuedProxyMiddleware } from "./middleware/request/proxy-middleware-factory";
-import { validateClaude41OpusParameters } from "../shared/claude-4-1-validation";
+import { validateSupportForTopPAndTemp } from "../shared/claude-4-1-validation";
 
 const LATEST_GCP_SONNET_MINOR_VERSION = "20240229";
 
@@ -33,9 +33,12 @@ const getModelsResponse = () => {
     "claude-sonnet-4@20250514",
     "claude-opus-4@20250514",
     "claude-opus-4-1@20250805",
-	"claude-opus-4-5@20251101",
+    "claude-opus-4-5@20251101",
+    "claude-opus-4-6@20260201",
     "claude-sonnet-4-5@20250929",
+    "claude-sonnet-4-6@default",
     "claude-haiku-4-5@20251001",
+    "claude-opus-4-7@default",
   ];
 
   const models = variants.map((id) => ({
@@ -135,7 +138,7 @@ gcpRouter.post(
  */
 function maybeReassignModel(req: Request) {
   // Validate Claude 4.1 Opus parameters before processing
-  validateClaude41OpusParameters(req);
+  validateSupportForTopPAndTemp(req);
   
   const model = req.body.model;
   const DEFAULT_MODEL = "claude-3-5-sonnet-v2@20241022";
@@ -259,6 +262,32 @@ function maybeReassignModel(req: Request) {
           return;
         case "sonnet":
           req.body.model = "claude-sonnet-4-5@20250929";
+          return;
+        case "opus":
+          req.body.model = "claude-opus-4-5@20251101";
+          return;
+        default:
+          req.body.model = DEFAULT_MODEL;
+      }
+      break;
+
+    case "4.6":
+      switch (flavor) {
+        case "opus":
+          req.body.model = "claude-opus-4-6@20260201";
+          return;
+        case "sonnet":
+          req.body.model = "claude-sonnet-4-6@default";
+          return;
+        default:
+          req.body.model = DEFAULT_MODEL;
+      }
+      break;
+
+    case "4.7":
+      switch (flavor) {
+        case "opus":
+          req.body.model = "claude-opus-4-7@default";
           return;
         default:
           req.body.model = DEFAULT_MODEL;

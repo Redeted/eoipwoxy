@@ -11,7 +11,7 @@ import { ProxyResHandlerWithBody } from "./middleware/response";
 import { ProxyReqManager } from "./middleware/request/proxy-req-manager";
 import { createQueuedProxyMiddleware } from "./middleware/request/proxy-middleware-factory";
 
-const KNOWN_MODELS = ["dall-e-2", "dall-e-3", "gpt-image-1"];
+const KNOWN_MODELS = ["dall-e-2", "dall-e-3", "gpt-image-1", "gpt-image-2"];
 
 let modelListCache: any = null;
 let modelListValid = 0;

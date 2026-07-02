@@ -5,7 +5,7 @@ import { z } from "zod";
 import { config } from "../../config";
 import { HttpError } from "../../shared/errors";
 import * as userStore from "../../shared/users/user-store";
-import { parseSort, sortBy, paginate } from "../../shared/utils";
+import { parseSort, sortBy, paginate, sanitizeAndTrim } from "../../shared/utils";
 import { keyPool } from "../../shared/key-management";
 import { LLMService, MODEL_FAMILIES } from "../../shared/models";
 import { getTokenCostUsd, prettyTokens } from "../../shared/stats";
@@ -290,6 +290,9 @@ router.post("/edit-user/:token", (req, res) => {
       result.error.issues.flatMap((issue) => issue.message).join(", ")
     );
   }
+
+  const nickname = result.data.nickname;
+  if (nickname) result.data.nickname = sanitizeAndTrim(nickname);
 
   userStore.upsertUser(result.data);
   return res.status(200).json({ success: true });

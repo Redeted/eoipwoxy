@@ -58,7 +58,7 @@ export const createPreprocessorMiddleware = (
     ...(afterTransform ?? []),
     validateContextSize,
     validateVision,
-    validateStreaming,
+	validateStreaming,
     validateModelFamily,
     applyQuotaLimits,
   ];

@@ -29,6 +29,9 @@ const KNOWN_MODEL_IDS: ModuleAliasTuple[] = [
   ["anthropic.claude-opus-4-20250514-v1:0"],
   ["anthropic.claude-opus-4-1-20250805-v1:0"],
   ["anthropic.claude-opus-4-5-20251101-v1:0"],
+  ["anthropic.claude-opus-4-6-v1"],
+  ["anthropic.claude-opus-4-7"],
+  ["anthropic.claude-opus-4-8"],
   ["anthropic.claude-sonnet-4-5-20250929-v1:0"],
   ["anthropic.claude-haiku-4-5-20251001-v1:0"],
   ["mistral.mistral-7b-instruct-v0:2"],
@@ -235,8 +238,9 @@ See https://docs.aws.amazon.com/bedrock/latest/userguide/cross-region-inference-
       // profile, fall back to regular model ID.
       const { region } = AwsKeyChecker.getCredentialsFromKey(key);
       const continent = region.split("-")[0];
+      const geoProfileId = `${continent}.${model}`;
       const profile = key.inferenceProfileIds.find(
-        (id) => `${continent}.${model}` === id
+        (id) => geoProfileId === id
       );
 
       if (profile) {
@@ -259,6 +263,25 @@ See https://docs.aws.amazon.com/bedrock/latest/userguide/cross-region-inference-
         // model (not the profile) to the list of enabled models, but the
         // profile will be used when the key is used for inference.
         if (result) return true;
+      } else {
+        // No discovered inference profile for this model. Some models (e.g.
+        // Claude Opus 4.6) require an inference profile and cannot be invoked
+        // directly. Try the geo-prefixed ID as a fallback.
+        this.log.debug(
+          { key: key.hash, model, geoProfileId },
+          "No inference profile found; trying geo-prefixed model ID."
+        );
+        let geoResult: boolean;
+        try {
+          geoResult = await this.testClaudeModel(key, geoProfileId);
+        } catch (e) {
+          this.log.debug(
+            { key: key.hash, model, geoProfileId, error: e.message },
+            "Geo-prefixed model ID test failed; trying direct model ID."
+          );
+          geoResult = false;
+        }
+        if (geoResult) return true;
       }
       this.log.debug({ key: key.hash, model }, "Testing model via model ID.");
       return this.testClaudeModel(key, model);
@@ -450,7 +473,6 @@ See https://docs.aws.amazon.com/bedrock/latest/userguide/cross-region-inference-
       this.updateKey(key.hash, { awsLoggingStatus: "unknown" });
       return true;
     }
-
     const creds = AwsKeyChecker.getCredentialsFromKey(key);
     const req: AxiosRequestConfig = {
       method: "GET",
@@ -461,7 +483,6 @@ See https://docs.aws.amazon.com/bedrock/latest/userguide/cross-region-inference-
     await AwsKeyChecker.signRequestForAws(req, key);
     const { data, status, headers } =
       await axios.request<GetLoggingConfigResponse>(req);
-
     let result: AwsBedrockKey["awsLoggingStatus"] = "unknown";
 
     if (status === 200) {

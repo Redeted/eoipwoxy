@@ -1,3 +1,5 @@
+// src/service-info.ts
+
 import { config, listConfig } from "./config";
 import {
   AnthropicKey,
@@ -11,6 +13,7 @@ import {
   QwenKey,
   GlmKey,
   MoonshotKey,
+  OpenRouterKey,
 } from "./shared/key-management";
 import {
   AnthropicModelFamily,
@@ -31,6 +34,8 @@ import {
   QwenModelFamily,
   GlmModelFamily,
   MoonshotModelFamily,
+  OpenRouterModuleFamily,
+  GroqModelFamily,
 } from "./shared/models";
 import { getCostSuffix, getTokenCostUsd, prettyTokens } from "./shared/stats";
 import { getUniqueIps } from "./proxy/rate-limit";
@@ -53,11 +58,12 @@ const MODEL_FAMILY_ORDER: ModelFamily[] = [
   "gpt41-nano",
   "gpt45",
   "gpt5",
-  "gpt51",
   "gpt5-mini",
   "gpt5-nano",
   "gpt5-chat-latest",
   "gpt5-pro",
+  "gpt51",
+  "gpt51-chat-latest",
   "o1",
   "o1-mini",
   "o1-pro",
@@ -68,6 +74,7 @@ const MODEL_FAMILY_ORDER: ModelFamily[] = [
   "codex-mini",
   "dall-e",
   "gpt-image",
+  "gpt-image-2",
   // Azure OpenAI models (same order as OpenAI)
   "azure-turbo",
   "azure-gpt4",
@@ -79,11 +86,12 @@ const MODEL_FAMILY_ORDER: ModelFamily[] = [
   "azure-gpt41-nano",
   "azure-gpt45",
   "azure-gpt5",
-  "azure-gpt51",
   "azure-gpt5-mini",
   "azure-gpt5-nano",
   "azure-gpt5-chat-latest",
   "azure-gpt5-pro",
+  "azure-gpt51",
+  "azure-gpt51-chat-latest",
   "azure-o1",
   "azure-o1-mini",
   "azure-o1-pro",
@@ -116,13 +124,18 @@ const MODEL_FAMILY_ORDER: ModelFamily[] = [
   // GCP models
   "gcp-claude",
   "gcp-claude-opus",
+  "gcp-gemini-flash",
+  "gcp-gemini-pro",
   // Other services
   "deepseek",
   "xai",
   "cohere",
   "qwen",
   "glm",
-  "moonshot"
+  "openrouter-paid",
+  "openrouter-free",
+  "moonshot",
+  "groq"
 ];
 
 type KeyPoolKey = ReturnType<typeof keyPool.list>[0];
@@ -144,6 +157,8 @@ const keyIsGlmKey = (k: KeyPoolKey): k is GlmKey =>
   k.service === "glm";
 const keyIsMoonshotKey = (k: KeyPoolKey): k is MoonshotKey =>
   k.service === "moonshot";
+const keyIsOpenRouterKey = (k: KeyPoolKey): k is OpenRouterKey =>
+  k.service === "openrouter";
 
 /** Stats aggregated across all keys for a given service. */
 type ServiceAggregate = "keys" | "uncheckedKeys" | "orgs";
@@ -155,17 +170,20 @@ type ModelAggregates = {
   overQuota?: number;
   pozzed?: number;
   awsLogged?: number;
+  awsSonnet4_5?: number;
   // needed to disambugiate aws-claude family's variants
   awsClaude2?: number;
   awsSonnet3?: number;
   awsSonnet3_5?: number;
   awsSonnet3_7?: number;
   awsSonnet4?: number;
-  awsSonnet4_5?: number;
-  awsOpus3?: number;
   awsOpus4_1?: number;
-  awsOpus4_5?: number;
+  awsOpus4_6?: number;
+  awsOpus4_7?: number;
+  awsOpus4_8?: number;
+  awsOpus3?: number;
   awsOpus4?: number;
+  awsOpus4_5?: number;
   awsHaiku3?: number;
   awsHaiku3_5?: number;
   awsHaiku4_5?: number;
@@ -176,6 +194,8 @@ type ModelAggregates = {
   inputTokens: number; // Changed from tokens
   outputTokens: number; // Added
   legacyTokens?: number; // Added for migrated totals
+  paidKeys?: number;
+  freeActiveKeys?: number;
 };
 /** All possible combinations of model family and aggregate type. */
 type ModelAggregateKey = `${ModelFamily}__${keyof ModelAggregates}`;
@@ -186,8 +206,16 @@ type AllStats = {
   outputTokens: number; // Added
   legacyTokens?: number; // Added
   tokenCost: number;
+  openRouterTotalBalance: number;
 } & { [modelFamily in ModelFamily]?: ModelAggregates } & {
   [service in LLMService as `${service}__${ServiceAggregate}`]?: number;
+};
+
+type OpenRouterInfo = BaseFamilyInfo & {
+  paidKeys?: number;
+  freeActiveKeys?: number;
+  overQuotaKeys?: number;
+  totalRemainingBalance?: string; // <--- ADDED
 };
 
 type BaseFamilyInfo = {
@@ -196,6 +224,7 @@ type BaseFamilyInfo = {
   revokedKeys?: number;
   proomptersInQueue?: number;
   estimatedQueueTime?: string;
+  Requests?: number; // <--- ADDED
 };
 type OpenAIInfo = BaseFamilyInfo & {
   trialKeys?: number;
@@ -230,6 +259,8 @@ export type ServiceInfo = {
     azure?: string;
     "openai-image"?: string;
     "azure-image"?: string;
+    "openrouter"?: string;
+    "groq"?: string;
   };
   proompts?: number;
   tookens?: string;
@@ -248,7 +279,10 @@ export type ServiceInfo = {
   & { [f in CohereModelFamily]?: BaseFamilyInfo }
   & { [f in QwenModelFamily]?: BaseFamilyInfo }
   & { [f in GlmModelFamily]?: BaseFamilyInfo }
-  & { [f in MoonshotModelFamily]?: BaseFamilyInfo };
+  & { [f in MoonshotModelFamily]?: BaseFamilyInfo }
+  & { [f in OpenRouterModuleFamily]?: OpenRouterInfo }
+  & { [f in GroqModelFamily]?: BaseFamilyInfo };
+
 
 // https://stackoverflow.com/a/66661477
 // type DeepKeyOf<T> = (
@@ -284,7 +318,8 @@ const SERVICE_ENDPOINTS: { [s in LLMService]: Record<string, string> } = {
     "aws-mistral": `%BASE%/aws/mistral`,
   },
   gcp: {
-    gcp: `%BASE%/gcp/claude`,
+    "gcp-claude": `%BASE%/gcp/claude`,
+    "gcp-gemini": `%BASE%/gcp/gemini`,
   },
   azure: {
     azure: `%BASE%/azure/openai`,
@@ -308,6 +343,12 @@ const SERVICE_ENDPOINTS: { [s in LLMService]: Record<string, string> } = {
   moonshot: {
     moonshot: `%BASE%/moonshot`,
   },
+  openrouter: {
+    openrouter: `%BASE%/openrouter`,
+  },
+  groq: {
+    groq: `%BASE%/groq`,
+  },
 };
 
 const familyStats = new Map<ModelAggregateKey, number>();
@@ -315,6 +356,9 @@ const serviceStats = new Map<keyof AllStats, number>();
 
 let cachedInfo: ServiceInfo | undefined;
 let cacheTime = 0;
+
+// Переменная для отслеживания общего баланса OpenRouter
+let openRouterTotalBalance = 0;
 
 export function buildInfo(baseUrl: string, forAdmin = false): ServiceInfo {
   if (cacheTime + CACHE_TTL > Date.now()) return cachedInfo!;
@@ -329,6 +373,8 @@ export function buildInfo(baseUrl: string, forAdmin = false): ServiceInfo {
 
   familyStats.clear();
   serviceStats.clear();
+  // Инициализируем openRouterTotalBalance нулем перед подсчетом
+  serviceStats.set("openRouterTotalBalance", 0);
   keys.forEach(addKeyToAggregates);
 
   const endpoints = getEndpoints(baseUrl, accessibleFamilies);
@@ -411,9 +457,12 @@ function getTrafficStats(): TrafficStats {
 }
 
 function getServiceModelStats(accessibleFamilies: Set<ModelFamily>) {
-  const serviceInfo: {
+  // Объединяем ServiceAggregate и openrouterTotalBalance в одну структуру для возврата
+  type ServiceInfoAggregates = {
     [s in LLMService as `${s}${"Keys" | "Orgs"}`]?: number;
-  } = {};
+  };
+
+  const serviceInfo: ServiceInfoAggregates = {};
   const modelFamilyInfo: { [f in ModelFamily]?: BaseFamilyInfo } = {};
 
   for (const service of LLM_SERVICES) {
@@ -426,6 +475,8 @@ function getServiceModelStats(accessibleFamilies: Set<ModelFamily>) {
       serviceInfo.openaiOrgs = getUniqueOpenAIOrgs(keyPool.list());
     }
   }
+  
+  // Общий баланс OpenRouter будет отображаться внутри openrouter-paid секции
 
   // Build model family info in the defined order for logical grouping
   for (const family of MODEL_FAMILY_ORDER) {
@@ -468,6 +519,8 @@ function addKeyToAggregates(k: KeyPoolKey) {
   addToService("qwen__keys", k.service === "qwen" ? 1 : 0);
   addToService("glm__keys", k.service === "glm" ? 1 : 0);
   addToService("moonshot__keys", k.service === "moonshot" ? 1 : 0);
+  addToService("openrouter__keys", k.service === "openrouter" ? 1 : 0);
+  addToService("groq__keys", k.service === "groq" ? 1 : 0);
 
   let sumInputTokens = 0;
   let sumOutputTokens = 0;
@@ -503,7 +556,7 @@ function addKeyToAggregates(k: KeyPoolKey) {
       addToFamily(`${f}__legacyTokens`, familyLegacyTokens); // Optional
     }
     addToFamily(`${f}__revoked`, k.isRevoked ? 1 : 0);
-    addToFamily(`${f}__active`, k.isDisabled ? 0 : 1);
+    // addToFamily(`${f}__active`, k.isDisabled ? 0 : 1); // <-- Удален универсальный подсчет
   };
 
   switch (k.service) {
@@ -512,6 +565,7 @@ function addKeyToAggregates(k: KeyPoolKey) {
       addToService("openai__uncheckedKeys", Boolean(k.lastChecked) ? 0 : 1);
       k.modelFamilies.forEach((f) => {
         incrementGenericFamilyStats(f);
+        addToFamily(`${f}__active`, k.isDisabled ? 0 : 1);
         addToFamily(`${f}__trial`, k.isTrial ? 1 : 0);
         addToFamily(`${f}__overQuota`, k.isOverQuota ? 1 : 0);
       });
@@ -521,6 +575,7 @@ function addKeyToAggregates(k: KeyPoolKey) {
       addToService("anthropic__uncheckedKeys", Boolean(k.lastChecked) ? 0 : 1);
       k.modelFamilies.forEach((f) => {
         incrementGenericFamilyStats(f);
+        addToFamily(`${f}__active`, k.isDisabled ? 0 : 1);
         addToFamily(`${f}__trial`, k.tier === "free" ? 1 : 0);
         addToFamily(`${f}__overQuota`, k.isOverQuota ? 1 : 0);
         addToFamily(`${f}__pozzed`, k.isPozzed ? 1 : 0);
@@ -529,7 +584,10 @@ function addKeyToAggregates(k: KeyPoolKey) {
 
     case "aws": {
       if (!keyIsAwsKey(k)) throw new Error("Invalid key type");
-      k.modelFamilies.forEach(incrementGenericFamilyStats);
+      k.modelFamilies.forEach(f => {
+        incrementGenericFamilyStats(f);
+        addToFamily(`${f}__active`, k.isDisabled ? 0 : 1);
+      });
       if (!k.isDisabled) {
         // Don't add revoked keys to available AWS variants
         k.modelIds.forEach((id) => {
@@ -553,12 +611,21 @@ function addKeyToAggregates(k: KeyPoolKey) {
           } else if (id.includes("claude-3-opus")) {
             addToFamily(`aws-claude__awsOpus3`, 1);
             addToFamily(`aws-claude-opus__awsOpus3`, 1);
+          } else if (id.includes("opus-4-7")) {
+            addToFamily(`aws-claude__awsOpus4_7`, 1);
+            addToFamily(`aws-claude-opus__awsOpus4_7`, 1);
+          } else if (id.includes("opus-4-8")) {
+            addToFamily(`aws-claude__awsOpus4_8`, 1);
+            addToFamily(`aws-claude-opus__awsOpus4_8`, 1);
+          } if (id.includes("opus-4-6")) {
+            addToFamily(`aws-claude__awsOpus4_6`, 1);
+            addToFamily(`aws-claude-opus__awsOpus4_6`, 1);
+          } else if (id.includes("opus-4-5")) {
+            addToFamily(`aws-claude__awsOpus4_5`, 1);
+            addToFamily(`aws-claude-opus__awsOpus4_5`, 1);
           } else if (id.includes("opus-4-1")) {
             addToFamily(`aws-claude__awsOpus4_1`, 1);
             addToFamily(`aws-claude-opus__awsOpus4_1`, 1);
-		  } else if (id.includes("opus-4-5")) {
-            addToFamily(`aws-claude__awsOpus4_5`, 1);
-            addToFamily(`aws-claude-opus__awsOpus4_5`, 1);
           } else if (id.includes("opus-4")) {
             addToFamily(`aws-claude__awsOpus4`, 1);
             addToFamily(`aws-claude-opus__awsOpus4`, 1);
@@ -576,13 +643,17 @@ function addKeyToAggregates(k: KeyPoolKey) {
     }
     case "gcp":
       if (!keyIsGcpKey(k)) throw new Error("Invalid key type");
-      k.modelFamilies.forEach(incrementGenericFamilyStats);
+      k.modelFamilies.forEach(f => {
+        incrementGenericFamilyStats(f);
+        addToFamily(`${f}__active`, k.isDisabled ? 0 : 1);
+      });
       // TODO: add modelIds to GcpKey
       break;
     case "deepseek":
       if (!keyIsDeepseekKey(k)) throw new Error("Invalid key type");
       k.modelFamilies.forEach((f) => {
         incrementGenericFamilyStats(f);
+        addToFamily(`${f}__active`, k.isDisabled ? 0 : 1);
         addToFamily(`${f}__overQuota`, k.isOverQuota ? 1 : 0);
       });
       break;
@@ -590,6 +661,7 @@ function addKeyToAggregates(k: KeyPoolKey) {
       if (!keyIsXaiKey(k)) throw new Error("Invalid key type");
       k.modelFamilies.forEach((f) => {
         incrementGenericFamilyStats(f);
+        addToFamily(`${f}__active`, k.isDisabled ? 0 : 1);
         if ('isOverQuota' in k) {
           addToFamily(`${f}__overQuota`, k.isOverQuota ? 1 : 0);
         }
@@ -599,6 +671,7 @@ function addKeyToAggregates(k: KeyPoolKey) {
       if (!keyIsCohereKey(k)) throw new Error("Invalid key type");
       k.modelFamilies.forEach((f) => {
         incrementGenericFamilyStats(f);
+        addToFamily(`${f}__active`, k.isDisabled ? 0 : 1);
         if ('isOverQuota' in k) {
           addToFamily(`${f}__overQuota`, k.isOverQuota ? 1 : 0);
         }
@@ -607,7 +680,10 @@ function addKeyToAggregates(k: KeyPoolKey) {
     // These services don't have any additional stats to track.
     case "azure":
     case "mistral-ai":
-      k.modelFamilies.forEach(incrementGenericFamilyStats);
+      k.modelFamilies.forEach(f => {
+        incrementGenericFamilyStats(f);
+        addToFamily(`${f}__active`, k.isDisabled ? 0 : 1);
+      });
       break;
     case "google-ai":
       // Cast to GoogleAIKey to access GoogleAI-specific properties
@@ -616,6 +692,7 @@ function addKeyToAggregates(k: KeyPoolKey) {
       // First handle general stats for all model families
       k.modelFamilies.forEach((f) => {
         incrementGenericFamilyStats(f);
+        addToFamily(`${f}__active`, k.isDisabled ? 0 : 1);
       });
       
       // Create a set of model families that are over quota for this key
@@ -643,17 +720,72 @@ function addKeyToAggregates(k: KeyPoolKey) {
       });
       break;
     case "qwen":
-      k.modelFamilies.forEach(incrementGenericFamilyStats);
+      k.modelFamilies.forEach(f => {
+        incrementGenericFamilyStats(f);
+        addToFamily(`${f}__active`, k.isDisabled ? 0 : 1);
+      });
       break;
     case "glm":
       if (!keyIsGlmKey(k)) throw new Error("Invalid key type");
       k.modelFamilies.forEach((f) => {
         incrementGenericFamilyStats(f);
+        addToFamily(`${f}__active`, k.isDisabled ? 0 : 1);
         addToFamily(`${f}__overQuota`, k.isOverQuota ? 1 : 0);
       });
       break;
     case "moonshot":
-      k.modelFamilies.forEach(incrementGenericFamilyStats);
+      k.modelFamilies.forEach(f => {
+        incrementGenericFamilyStats(f);
+        addToFamily(`${f}__active`, k.isDisabled ? 0 : 1);
+      });
+      break;
+    case "openrouter":
+      if (!keyIsOpenRouterKey(k)) throw new Error("Invalid key type");
+      addToService("openrouter__uncheckedKeys", Boolean(k.lastChecked) ? 0 : 1);
+
+      // Рассчитываем баланс с учетом лимитов только для активных ключей
+      if (!k.isFreeTier && !k.isRevoked && !k.isDisabled) {
+          const accountBalance = (k as any).accountBalance || 0;
+          const limitRemaining = (k as any).limitRemaining;
+
+          let balanceToAdd = accountBalance;
+
+          // Если есть лимит ключа, используем минимум
+          if (limitRemaining !== null && limitRemaining !== undefined) {
+              balanceToAdd = Math.min(accountBalance, limitRemaining);
+          }
+
+          addToService("openRouterTotalBalance", balanceToAdd);
+      }
+
+      const isPaidActive = !k.isFreeTier && !k.isOverQuota && !k.isDisabled;
+      const isFreeActive = k.isFreeTier && !k.isOverQuota && !k.isDisabled;
+
+      k.modelFamilies.forEach((f) => {
+        incrementGenericFamilyStats(f);
+
+        // --- СПЕЦИАЛЬНАЯ ЛОГИКА ДЛЯ OPENROUTER ---
+        if (f === 'openrouter-paid') {
+           // activeKeys = 1, только если ключ Paid и может быть использован для платных моделей
+           addToFamily(`${f}__active`, isPaidActive ? 1 : 0);
+           addToFamily(`${f}__paidKeys`, isPaidActive ? 1 : 0);
+           addToFamily(`${f}__overQuota`, (k.isOverQuota && !k.isFreeTier) ? 1 : 0);
+        } else if (f === 'openrouter-free') {
+           // activeKeys = 1, только если ключ Free и активен
+           addToFamily(`${f}__active`, isFreeActive ? 1 : 0);
+           addToFamily(`${f}__freeActiveKeys`, isFreeActive ? 1 : 0);
+           addToFamily(`${f}__overQuota`, (k.isOverQuota && k.isFreeTier) ? 1 : 0);
+        } else {
+             // Fallback for other families if somehow included in OR keys
+             addToFamily(`${f}__active`, k.isDisabled ? 0 : 1);
+        }
+      });
+      break;
+    case "groq":
+      if (!('isOverQuota' in k)) throw new Error("Invalid key type for groq");
+      incrementGenericFamilyStats("groq");
+      addToFamily(`groq__active`, k.isDisabled ? 0 : 1);
+      addToFamily(`groq__overQuota`, (k as any).isOverQuota ? 1 : 0);
       break;
     default:
       assertNever(k.service);
@@ -689,10 +821,11 @@ function getInfoForFamily(family: ModelFamily): BaseFamilyInfo {
     usageString = `${prettyTokens(0)} tokens${getCostSuffix(0)}`;
   }
   
-  let info: BaseFamilyInfo & OpenAIInfo & AnthropicInfo & AwsInfo & GcpInfo = {
+  let info: BaseFamilyInfo & OpenAIInfo & AnthropicInfo & AwsInfo & GcpInfo & OpenRouterInfo = {
     usage: usageString,
     activeKeys: familyStats.get(`${family}__active`) || 0,
     revokedKeys: familyStats.get(`${family}__revoked`) || 0,
+	Requests: keyPool.getRequestCount(family), // <--- ADDED
   };
 
   // Add service-specific stats to the info object.
@@ -739,13 +872,18 @@ function getInfoForFamily(family: ModelFamily): BaseFamilyInfo {
               : `${logged} active keys are potentially logged and can't be used. Set ALLOW_AWS_LOGGING=true to override.`;
           }
         } else if (family === "aws-claude-opus") {
+          console.log(family);
           // Get logging info from aws-claude family since that's where it's collected
           const awsLogged = familyStats.get(`aws-claude__awsLogged`) || 0;
+          console.log(familyStats);
           const variants = new Set<string>();
           if (familyStats.get(`${family}__awsOpus3`) || 0) variants.add("opus3");
           if (familyStats.get(`${family}__awsOpus4`) || 0) variants.add("opus4");
           if (familyStats.get(`${family}__awsOpus4_1`) || 0) variants.add("opus4.1");
-		  if (familyStats.get(`${family}__awsOpus4_5`) || 0) variants.add("opus4.5");
+          if (familyStats.get(`${family}__awsOpus4_5`) || 0) variants.add("opus4.5");
+          if (familyStats.get(`${family}__awsOpus4_6`) || 0) variants.add("opus4.6");
+          if (familyStats.get(`${family}__awsOpus4_7`) || 0) variants.add("opus4.7");
+          if (familyStats.get(`${family}__awsOpus4_8`) || 0) variants.add("opus4.8");
 
           info.enabledVariants = variants.size ? Array.from(variants).join(",") : undefined;
 
@@ -783,6 +921,21 @@ function getInfoForFamily(family: ModelFamily): BaseFamilyInfo {
         info.overQuotaKeys = familyStats.get(`${family}__overQuota`) || 0;
         break;
       case "moonshot":
+        info.overQuotaKeys = familyStats.get(`${family}__overQuota`) || 0;
+        break;
+      case "openrouter":
+        info.overQuotaKeys = familyStats.get(`${family}__overQuota`) || 0;
+        if (family === 'openrouter-paid') {
+          info.paidKeys = familyStats.get(`${family}__paidKeys`) || 0;
+
+          // Отображаем суммарный баланс в paid-секции всегда
+          const totalBalance = serviceStats.get("openRouterTotalBalance") || 0;
+          info.totalRemainingBalance = `$${totalBalance.toFixed(2)}`;
+        } else if (family === 'openrouter-free') {
+          info.freeActiveKeys = familyStats.get(`${family}__freeActiveKeys`) || 0;
+        }
+        break;
+      case "groq":
         info.overQuotaKeys = familyStats.get(`${family}__overQuota`) || 0;
         break;
     }

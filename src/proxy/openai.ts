@@ -371,7 +371,7 @@ const setupChunkedTransfer: RequestHandler = (req, res, next) => {
 function shouldUseResponsesApi(model: string): boolean {
   return model === "o1-pro" || model.startsWith("o1-pro") ||
          model === "o3-pro" || model.startsWith("o3-pro") ||
-         model === "gpt-5-pro" || model.startsWith("gpt-5-pro") ||
+		 model === "gpt-5-pro" || model.startsWith("gpt-5-pro") ||
          model === "codex-mini-latest" || model.startsWith("codex-mini") ||
          model === "gpt-5-codex-latest" || model.startsWith("gpt-5-codex");
 }
@@ -491,17 +491,17 @@ function fixupMaxTokens(req: Request) {
 // Remove them if present to prevent API errors
 function filterGPT5UnsupportedParams(req: Request) {
   const model = req.body.model;
-  
-  // Only apply filtering to these specific models (gpt5-chat-latest supports all params)
-  const restrictedModels = /^gpt-5(\\.1)?(-mini|-nano)?(-\d{4}-\d{2}-\d{2})?$/;
-  
+
+  // Only apply filtering to these specific models (gpt5-chat-latest and gpt51-chat-latest support all params)
+  const restrictedModels = /^gpt-5(-mini|-nano)?(-\d{4}-\d{2}-\d{2})?$/;
+
   if (!restrictedModels.test(model)) {
     return; // Not a restricted model, no filtering needed
   }
-  
+
   // Remove unsupported parameters if they exist
   const unsupportedParams = ['temperature', 'top_p', 'presence_penalty', 'frequency_penalty'];
-  
+
   for (const param of unsupportedParams) {
     if (req.body[param] !== undefined) {
       delete req.body[param];

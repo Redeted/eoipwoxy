@@ -26,6 +26,7 @@ export { finalizeBody } from "./mutators/finalize-body";
 export { finalizeSignedRequest } from "./mutators/finalize-signed-request";
 export { signAwsRequest } from "./mutators/sign-aws-request";
 export { signGcpRequest } from "./mutators/sign-vertex-ai-request";
+export { signGcpGeminiRequest } from "./mutators/sign-vertex-ai-gemini-request";
 export { stripHeaders } from "./mutators/strip-headers";
 
 /**

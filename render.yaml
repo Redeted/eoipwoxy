@@ -1,8 +1,8 @@
 services:
   - type: web
-    name: eoipwoxy
-    runtime: docker
-    repo: https://gitlab.com/neterer/teder7.git
+    name: oai-proxy
+    env: docker
+    repo: https://github.com/DergotYT/proxy.git
     region: oregon
     plan: free
     branch: main

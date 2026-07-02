@@ -6,6 +6,7 @@ import { azure } from "./azure";
 import { checkRisuToken } from "./check-risu-token";
 import { gatekeeper } from "./gatekeeper";
 import { gcp } from "./gcp";
+import { gcpGemini } from "./gcp-gemini";
 import { googleAI } from "./google-ai";
 import { mistralAI } from "./mistral-ai";
 import { openai } from "./openai";
@@ -13,6 +14,8 @@ import { openaiImage } from "./openai-image";
 import { deepseek } from "./deepseek";
 import { xai } from "./xai";
 import { cohere } from "./cohere";
+import { openrouter } from "./openrouter";
+import { groq } from "./groq";
 import { qwen } from "./qwen";
 import { glm } from "./glm";
 import { moonshot } from "./moonshot";
@@ -54,13 +57,16 @@ proxyRouter.use("/google-ai", addV1, googleAI);
 proxyRouter.use("/mistral-ai", addV1, mistralAI);
 proxyRouter.use("/aws", aws);
 proxyRouter.use("/gcp/claude", addV1, gcp);
+proxyRouter.use("/gcp/gemini", addV1, gcpGemini);
 proxyRouter.use("/azure/openai", addV1, azure);
 proxyRouter.use("/deepseek", addV1, deepseek);
 proxyRouter.use("/xai", addV1, xai);
 proxyRouter.use("/cohere", addV1, cohere);
 proxyRouter.use("/qwen", addV1, qwen);
 proxyRouter.use("/glm", addV1, glm);
+proxyRouter.use("/groq", addV1, groq);
 proxyRouter.use("/moonshot", addV1, moonshot);
+proxyRouter.use("/openrouter", addV1, openrouter);
 
 // Redirect browser requests to the homepage.
 proxyRouter.get("*", (req, res, next) => {

@@ -96,11 +96,14 @@ export class AwsBedrockKeyProvider implements KeyProvider<AwsBedrockKey> {
   }
 
   public get(model: string, _streaming?: boolean, requestBody?: any) {
-    // Strip global. prefix for AWS Bedrock cross-region inference profiles
-    // Keys are discovered without this prefix, but requests may include it
-    let neededVariantId = model.startsWith('global.')
-      ? model.substring(7)
-      : model;
+    // Strip cross-region prefixes for AWS Bedrock inference profiles
+    // Keys are discovered without these prefixes, but requests may include them
+    let neededVariantId = model;
+    if (model.startsWith('global.')) {
+      neededVariantId = model.substring(7);
+    } else if (model.startsWith('us.') || model.startsWith('eu.')) {
+      neededVariantId = model.substring(3);
+    }
     // This function accepts both Anthropic/Mistral IDs and AWS IDs.
     // Generally all AWS model IDs are supersets of the original vendor IDs.
     // Claude 2 is the only model that breaks this convention; Anthropic calls

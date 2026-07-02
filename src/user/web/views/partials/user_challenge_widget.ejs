@@ -332,7 +332,7 @@
       body.proxyKey = localStorage.getItem("captcha-proxy-key");
     }
 
-    fetch("/user/captcha/verify", {
+    fetch("/user/captcha/verify?after_questions=true", {
       method: "POST",
       credentials: "same-origin",
       headers: { "Content-Type": "application/json" },

@@ -15,6 +15,11 @@ const POST_STREAM_RAW_URL = (project: string, region: string, model: string) =>
     "%REGION%",
     region
   )}/v1/projects/${project}/locations/${region}/publishers/anthropic/models/${model}:streamRawPredict`;
+const POST_GEMINI_URL = (project: string, region: string, model: string) =>
+  `https://${GCP_HOST.replace(
+    "%REGION%",
+    region
+  )}/v1/projects/${project}/locations/${region}/publishers/google/models/${model}:generateContent`;
 const TEST_MESSAGES = [
   { role: "user", content: "Hi!" },
   { role: "assistant", content: "Hello!" },
@@ -43,21 +48,36 @@ export class GcpKeyChecker extends KeyCheckerBase<GcpKey> {
         this.invokeModel("claude-3-sonnet@20240229", key, true),
         this.invokeModel("claude-3-opus@20240229", key, true),
         this.invokeModel("claude-opus-4-1@20250805", key, true),
+        this.invokeModel("claude-opus-4-6@20260201", key, true),
+        this.invokeModel("claude-opus-4-7@default", key, true),
         this.invokeModel("claude-3-5-sonnet-v2@20241022", key, true),
         this.invokeModel("claude-sonnet-4-5@20250929", key, true),
         this.invokeModel("claude-haiku-4-5@20251001", key, true),
+        this.invokeGeminiModel("gemini-2.5-pro", key, true),
+        this.invokeGeminiModel("gemini-3-pro-image-preview", key, true),
+        this.invokeGeminiModel("gemini-3.1-pro-preview", key, true),
+        this.invokeGeminiModel("gemini-3.1-flash-image-preview", key, true),
       ];
 
-      const [sonnet, haiku, opus3, opus41, sonnet35, sonnet45, haiku45] = await Promise.all(checks);
+      const [
+        sonnet, haiku, opus3, opus41, opus46, opus47, sonnet35, sonnet45, haiku45,
+        geminiPro25, geminiPro3, geminiPro31, geminiFlash31,
+      ] = await Promise.all(checks);
 
       this.log.debug(
-        { key: key.hash, sonnet, haiku, opus3, opus41, sonnet35, sonnet45, haiku45 },
+        {
+          key: key.hash,
+          sonnet, haiku, opus3, opus41, opus46, opus47, sonnet35, sonnet45, haiku45,
+          geminiPro25, geminiPro3, geminiPro31, geminiFlash31,
+        },
         "GCP model initial tests complete."
       );
 
       const families: GcpModelFamily[] = [];
       if (sonnet || sonnet35 || sonnet45 || haiku || haiku45) families.push("gcp-claude");
-      if (opus3 || opus41) families.push("gcp-claude-opus");
+      if (opus3 || opus41 || opus46 || opus47) families.push("gcp-claude-opus");
+      if (geminiFlash31) families.push("gcp-gemini-flash");
+      if (geminiPro25 || geminiPro3 || geminiPro31) families.push("gcp-gemini-pro");
 
       if (families.length === 0) {
         this.log.warn(
@@ -71,6 +91,8 @@ export class GcpKeyChecker extends KeyCheckerBase<GcpKey> {
         sonnetEnabled: sonnet,
         haikuEnabled: haiku,
         sonnet35Enabled: sonnet35,
+        geminiFlashEnabled: geminiFlash31,
+        geminiProEnabled: geminiPro25 || geminiPro3 || geminiPro31,
         modelFamilies: families,
       });
     } else {
@@ -82,9 +104,15 @@ export class GcpKeyChecker extends KeyCheckerBase<GcpKey> {
       } else if (key.sonnet35Enabled) {
         await this.invokeModel("claude-3-5-sonnet@20240620", key, false);
         await this.invokeModel("claude-3-5-sonnet-v2@20241022", key, false);
+      } else if (key.geminiFlashEnabled) {
+        await this.invokeGeminiModel("gemini-3.1-flash-image-preview", key, false);
+      } else if (key.geminiProEnabled) {
+        await this.invokeGeminiModel("gemini-2.5-pro", key, false);
       } else {
         await this.invokeModel("claude-3-opus@20240229", key, false);
         await this.invokeModel("claude-opus-4-1@20250805", key, false);
+        await this.invokeModel("claude-opus-4-6@20260201", key, false);
+        await this.invokeModel("claude-opus-4-7@default", key, false);
       }
 
       this.updateKey(key.hash, { lastChecked: Date.now() });
@@ -147,9 +175,9 @@ export class GcpKeyChecker extends KeyCheckerBase<GcpKey> {
   }
 
   /**
-   * Attempt to invoke the given model with the given key.  Returns true if the
-   * key has access to the model, false if it does not. Throws an error if the
-   * key is disabled.
+   * Attempt to invoke the given Anthropic model with the given key.  Returns
+   * true if the key has access to the model, false if it does not. Throws an
+   * error if the key is disabled.
    */
   private async invokeModel(model: string, key: GcpKey, initial: boolean) {
     const creds = await getCredentialsFromGcpKey(key);
@@ -179,6 +207,47 @@ export class GcpKeyChecker extends KeyCheckerBase<GcpKey> {
       }
     );
     this.log.debug({ key: key.hash, data }, "Response from GCP");
+
+    if (initial) {
+      return (
+        (status >= 200 && status < 300) || status === 429 || status === 529
+      );
+    }
+
+    return true;
+  }
+
+  /**
+   * Attempt to invoke the given Gemini model via the Vertex AI Google publisher
+   * endpoint. Returns true if the key has access to the model, false if not.
+   */
+  private async invokeGeminiModel(model: string, key: GcpKey, initial: boolean) {
+    const creds = await getCredentialsFromGcpKey(key);
+    try {
+      await this.maybeRefreshAccessToken(key);
+    } catch (e) {
+      this.log.error(
+        { key: key.hash, error: e.message },
+        "Could not test Gemini model due to error while getting access token."
+      );
+      return false;
+    }
+
+    const payload = {
+      contents: [{ parts: [{ text: "Hi" }], role: "user" }],
+      generationConfig: { maxOutputTokens: 1 },
+    };
+    const { data, status } = await axios.post(
+      POST_GEMINI_URL(creds.projectId, creds.region, model),
+      payload,
+      {
+        headers: GcpKeyChecker.getRequestHeaders(key.accessToken),
+        validateStatus: initial
+          ? () => true
+          : (status: number) => status >= 200 && status < 300,
+      }
+    );
+    this.log.debug({ key: key.hash, model, data }, "Response from GCP Gemini");
 
     if (initial) {
       return (

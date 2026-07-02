@@ -19,8 +19,10 @@ export type LLMService =
   | "xai"
   | "cohere"
   | "qwen"
+  | "openrouter"
   | "glm"
-  | "moonshot";
+  | "moonshot"
+  | "groq";
 
 export type OpenAIModelFamily =
   | "turbo"
@@ -33,11 +35,12 @@ export type OpenAIModelFamily =
   | "gpt41-nano"
   | "gpt45"
   | "gpt5"
-  | "gpt51"
   | "gpt5-mini"
   | "gpt5-nano"
   | "gpt5-chat-latest"
   | "gpt5-pro"
+  | "gpt51"
+  | "gpt51-chat-latest"
   | "o1"
   | "o1-mini"
   | "o1-pro"
@@ -47,7 +50,8 @@ export type OpenAIModelFamily =
   | "o4-mini"
   | "codex-mini"
   | "dall-e"
-  | "gpt-image";
+  | "gpt-image"
+  | "gpt-image-2";
 export type AnthropicModelFamily = "claude" | "claude-opus";
 export type GoogleAIModelFamily =
   | "gemini-flash"
@@ -60,7 +64,7 @@ export type MistralAIModelFamily =
 export type AwsBedrockModelFamily = `aws-${
   | AnthropicModelFamily
   | MistralAIModelFamily}`;
-export type GcpModelFamily = "gcp-claude" | "gcp-claude-opus";
+export type GcpModelFamily = "gcp-claude" | "gcp-claude-opus" | "gcp-gemini-flash" | "gcp-gemini-pro";
 export type AzureOpenAIModelFamily = `azure-${OpenAIModelFamily}`;
 export type DeepseekModelFamily = "deepseek";
 export type XaiModelFamily = "xai";
@@ -68,6 +72,25 @@ export type CohereModelFamily = "cohere";
 export type QwenModelFamily = "qwen";
 export type GlmModelFamily = "glm";
 export type MoonshotModelFamily = "moonshot";
+export type OpenRouterModuleFamily = "openrouter-paid" | "openrouter-free";
+export type GroqModelFamily =
+  | "groq"
+  | "groq-allam-2-7b"
+  | "groq-compound"
+  | "groq-compound-mini"
+  | "groq-llama-4-maverick-17b-128e-instruct"
+  | "groq-llama-4-scout-17b-16e-instruct"
+  | "groq-llama-guard-4-12b"
+  | "groq-llama-prompt-guard-2-22m"
+  | "groq-llama-prompt-guard-2-86m"
+  | "groq-llama-3.3-70b-versatile"
+  | "groq-llama-3.1-8b-instant"
+  | "groq-kimi-k2-instruct"
+  | "groq-kimi-k2-instruct-0905"
+  | "groq-gpt-oss-safeguard-20b"
+  | "groq-gpt-oss-120b"
+  | "groq-gpt-oss-20b"
+  | "groq-qwen3-32b";
 
 export type ModelFamily =
   | OpenAIModelFamily
@@ -82,7 +105,9 @@ export type ModelFamily =
   | CohereModelFamily
   | QwenModelFamily
   | GlmModelFamily
-  | MoonshotModelFamily;
+  | OpenRouterModuleFamily
+  | MoonshotModelFamily
+  | GroqModelFamily;
 
 export const MODEL_FAMILIES = (<A extends readonly ModelFamily[]>(
   arr: A & ([ModelFamily] extends [A[number]] ? unknown : never)
@@ -93,6 +118,7 @@ export const MODEL_FAMILIES = (<A extends readonly ModelFamily[]>(
   "cohere",
   "xai",
   "deepseek",
+  "groq",
   "turbo",
   "gpt4",
   "gpt4-32k",
@@ -103,11 +129,12 @@ export const MODEL_FAMILIES = (<A extends readonly ModelFamily[]>(
   "gpt41-mini",
   "gpt41-nano",
   "gpt5",
-  "gpt51",
   "gpt5-mini",
   "gpt5-nano",
   "gpt5-chat-latest",
   "gpt5-pro",
+  "gpt51",
+  "gpt51-chat-latest",
   "o1",
   "o1-mini",
   "o1-pro",
@@ -118,6 +145,7 @@ export const MODEL_FAMILIES = (<A extends readonly ModelFamily[]>(
   "codex-mini",
   "dall-e",
   "gpt-image",
+  "gpt-image-2",
   "claude",
   "claude-opus",
   "gemini-flash",
@@ -135,6 +163,8 @@ export const MODEL_FAMILIES = (<A extends readonly ModelFamily[]>(
   "aws-mistral-large",
   "gcp-claude",
   "gcp-claude-opus",
+  "gcp-gemini-flash",
+  "gcp-gemini-pro",
   "azure-turbo",
   "azure-gpt4",
   "azure-gpt4-32k",
@@ -145,11 +175,12 @@ export const MODEL_FAMILIES = (<A extends readonly ModelFamily[]>(
   "azure-gpt41-mini",
   "azure-gpt41-nano",
   "azure-gpt5",
-  "azure-gpt51",
   "azure-gpt5-mini",
   "azure-gpt5-nano",
   "azure-gpt5-chat-latest",
   "azure-gpt5-pro",
+  "azure-gpt51",
+  "azure-gpt51-chat-latest",
   "azure-dall-e",
   "azure-o1",
   "azure-o1-mini",
@@ -160,6 +191,26 @@ export const MODEL_FAMILIES = (<A extends readonly ModelFamily[]>(
   "azure-o4-mini",
   "azure-codex-mini",
   "azure-gpt-image",
+  "azure-gpt-image-2",
+  "openrouter-paid", // <--- ADDED
+  "openrouter-free", // <--- ADDED
+  "groq",
+  "groq-allam-2-7b",
+  "groq-compound",
+  "groq-compound-mini",
+  "groq-llama-4-maverick-17b-128e-instruct",
+  "groq-llama-4-scout-17b-16e-instruct",
+  "groq-llama-guard-4-12b",
+  "groq-llama-prompt-guard-2-22m",
+  "groq-llama-prompt-guard-2-86m",
+  "groq-llama-3.3-70b-versatile",
+  "groq-llama-3.1-8b-instant",
+  "groq-kimi-k2-instruct",
+  "groq-kimi-k2-instruct-0905",
+  "groq-gpt-oss-safeguard-20b",
+  "groq-gpt-oss-120b",
+  "groq-gpt-oss-20b",
+  "groq-qwen3-32b",
 ] as const);
 
 export const LLM_SERVICES = (<A extends readonly LLMService[]>(
@@ -176,8 +227,10 @@ export const LLM_SERVICES = (<A extends readonly LLMService[]>(
   "xai",
   "cohere",
   "qwen",
+  "openrouter",
   "glm",
-  "moonshot"
+  "moonshot",
+  "groq"
 ] as const);
 
 export const MODEL_FAMILY_SERVICE: {
@@ -199,11 +252,12 @@ export const MODEL_FAMILY_SERVICE: {
   "gpt41-mini": "openai",
   "gpt41-nano": "openai",
   gpt5: "openai",
-  gpt51: "openai",
   "gpt5-mini": "openai",
   "gpt5-nano": "openai",
   "gpt5-chat-latest": "openai",
   "gpt5-pro": "openai",
+  "gpt51": "openai",
+  "gpt51-chat-latest": "openai",
   "o1": "openai",
   "o1-mini": "openai",
   "o1-pro": "openai",
@@ -214,6 +268,7 @@ export const MODEL_FAMILY_SERVICE: {
   "codex-mini": "openai",
   "dall-e": "openai",
   "gpt-image": "openai",
+  "gpt-image-2": "openai",
   claude: "anthropic",
   "claude-opus": "anthropic",
   "aws-claude": "aws",
@@ -224,6 +279,8 @@ export const MODEL_FAMILY_SERVICE: {
   "aws-mistral-large": "aws",
   "gcp-claude": "gcp",
   "gcp-claude-opus": "gcp",
+  "gcp-gemini-flash": "gcp",
+  "gcp-gemini-pro": "gcp",
   "azure-turbo": "azure",
   "azure-gpt4": "azure",
   "azure-gpt4-32k": "azure",
@@ -234,11 +291,12 @@ export const MODEL_FAMILY_SERVICE: {
   "azure-gpt41-mini": "azure",
   "azure-gpt41-nano": "azure",
   "azure-gpt5": "azure",
-  "azure-gpt51": "azure",
   "azure-gpt5-mini": "azure",
   "azure-gpt5-nano": "azure",
   "azure-gpt5-chat-latest": "azure",
   "azure-gpt5-pro": "azure",
+  "azure-gpt51": "azure",
+  "azure-gpt51-chat-latest": "azure",
   "azure-dall-e": "azure",
   "azure-o1": "azure",
   "azure-o1-mini": "azure",
@@ -249,6 +307,7 @@ export const MODEL_FAMILY_SERVICE: {
   "azure-o4-mini": "azure",
   "azure-codex-mini": "azure",
   "azure-gpt-image": "azure",
+  "azure-gpt-image-2": "azure",
   "gemini-flash": "google-ai",
   "gemini-pro": "google-ai",
   "gemini-ultra": "google-ai",
@@ -256,18 +315,69 @@ export const MODEL_FAMILY_SERVICE: {
   "mistral-small": "mistral-ai",
   "mistral-medium": "mistral-ai",
   "mistral-large": "mistral-ai",
+  "openrouter-paid": "openrouter", // <--- ADDED
+  "openrouter-free": "openrouter", // <--- ADDED
+  groq: "groq",
+  "groq-allam-2-7b": "groq",
+  "groq-compound": "groq",
+  "groq-compound-mini": "groq",
+  "groq-llama-4-maverick-17b-128e-instruct": "groq",
+  "groq-llama-4-scout-17b-16e-instruct": "groq",
+  "groq-llama-guard-4-12b": "groq",
+  "groq-llama-prompt-guard-2-22m": "groq",
+  "groq-llama-prompt-guard-2-86m": "groq",
+  "groq-llama-3.3-70b-versatile": "groq",
+  "groq-llama-3.1-8b-instant": "groq",
+  "groq-kimi-k2-instruct": "groq",
+  "groq-kimi-k2-instruct-0905": "groq",
+  "groq-gpt-oss-safeguard-20b": "groq",
+  "groq-gpt-oss-120b": "groq",
+  "groq-gpt-oss-20b": "groq",
+  "groq-qwen3-32b": "groq",
 };
+
+const FREE_OPENROUTER_MODELS = [
+  "nvidia/nemotron-nano-9b-v2:free", "deepseek/deepseek-chat-v3.1:free", 
+  "openai/gpt-oss-120b:free", "openai/gpt-oss-20b:free", "z-ai/glm-4.5-air:free", 
+  "qwen/qwen3-coder:free", "moonshotai/kimi-k2:free", "cognitivecomputations/dolphin-mistral-24b-venice-edition:free", 
+  "google/gemma-3n-e2b-it:free", "tencent/hunyuan-a13b-instruct:free", "tngtech/deepseek-r1t2-chimera:free", 
+  "mistralai/mistral-small-3.2-24b-instruct:free", "moonshotai/kimi-dev-72b:free", "deepseek/deepseek-r1-0528-qwen3-8b:free", 
+  "deepseek/deepseek-r1-0528:free", "mistralai/devstral-small-2505:free", "google/gemma-3n-e4b-it:free", 
+  "meta-llama/llama-3.3-8b-instruct:free", "qwen/qwen3-4b:free", "qwen/qwen3-30b-a3b:free", 
+  "qwen/qwen3-8b:free", "qwen/qwen3-14b:free", "qwen/qwen3-235b-a22b:free", 
+  "tngtech/deepseek-r1t-chimera:free", "microsoft/mai-ds-r1:free", "shisa-ai/shisa-v2-llama3.3-70b:free", 
+  "arliai/qwq-32b-arliai-rpr-v1:free", "agentica-org/deepcoder-14b-preview:free", "moonshotai/kimi-vl-a3b-thinking:free", 
+  "nvidia/llama-3.1-nemotron-ultra-253b-v1:free", "meta-llama/llama-4-maverick:free", "meta-llama/llama-4-scout:free", 
+  "qwen/qwen2.5-vl-32b-instruct:free", "deepseek/deepseek-chat-v3-0324:free", "mistralai/mistral-small-3.1-24b-instruct:free", 
+  "google/gemma-3-4b-it:free", "google/gemma-3-12b-it:free", "rekaai/reka-flash-3:free", 
+  "google/gemma-3-27b-it:free", "qwen/qwq-32b:free", "nousresearch/deephermes-3-llama-3-8b-preview:free", 
+  "cognitivecomputations/dolphin3.0-r1-mistral-24b:free", "cognitivecomputations/dolphin3.0-mistral-24b:free", 
+  "qwen/qwen2.5-vl-72b-instruct:free", "mistralai/mistral-small-24b-instruct-2501:free", "deepseek/deepseek-r1-distill-qwen-14b:free", 
+  "deepseek/deepseek-r1-distill-llama-70b:free", "deepseek/deepseek-r1:free", 
+  "meta-llama/llama-3.3-70b-instruct:free", "qwen/qwen-2.5-coder-32b-instruct:free", "meta-llama/llama-3.2-3b-instruct:free", 
+  "qwen/qwen-2.5-72b-instruct:free", "meta-llama/llama-3.1-405b-instruct:free", "mistralai/mistral-nemo:free", 
+  "google/gemma-2-9b-it:free", "mistralai/mistral-7b-instruct:free",
+];
+
+export function getOpenRouterModuleFamily(model: string): OpenRouterModuleFamily {
+  if (model.includes(":free") || FREE_OPENROUTER_MODELS.includes(model)) {
+    return "openrouter-free";
+  }
+  return "openrouter-paid";
+}
 
 export const IMAGE_GEN_MODELS: ModelFamily[] = ["dall-e", "azure-dall-e", "gpt-image", "azure-gpt-image", "gemini-flash"];
 
 export const OPENAI_MODEL_FAMILY_MAP: { [regex: string]: OpenAIModelFamily } = {
+  "^gpt-image-2?(-preview)?(-\\d{4}-\\d{2}-\\d{2})?$": "gpt-image-2",
   "^gpt-image(-\\d+)?(-preview)?(-\\d{4}-\\d{2}-\\d{2})?$": "gpt-image",
-  "^gpt-5\\.1(-\\d{4}-\\d{2}-\\d{2})?$": "gpt51",
   "^gpt-5(-\\d{4}-\\d{2}-\\d{2})?$": "gpt5",
   "^gpt-5-mini(-\\d{4}-\\d{2}-\\d{2})?$": "gpt5-mini",
   "^gpt-5-nano(-\\d{4}-\\d{2}-\\d{2})?$": "gpt5-nano",
   "^gpt-5-chat-latest(-\\d{4}-\\d{2}-\\d{2})?$": "gpt5-chat-latest",
   "^gpt-5-pro(-\\d{4}-\\d{2}-\\d{2})?$": "gpt5-pro",
+  "^gpt-5\\.1(-\\d{4}-\\d{2}-\\d{2})?$": "gpt51",
+  "^gpt-5\\.1-chat-latest(-\\d{4}-\\d{2}-\\d{2})?$": "gpt51-chat-latest",
   "^gpt-4\\.5(-preview)?(-\\d{4}-\\d{2}-\\d{2})?$": "gpt45",
   "^gpt-4\\.1(-\\d{4}-\\d{2}-\\d{2})?$": "gpt41",
   "^gpt-4\\.1-mini(-\\d{4}-\\d{2}-\\d{2})?$": "gpt41-mini",
@@ -393,6 +503,9 @@ export function getAwsBedrockModelFamily(model: string): AwsBedrockModelFamily {
 }
 
 export function getGcpModelFamily(model: string): GcpModelFamily {
+  if (model.includes("gemini")) {
+    return model.includes("flash") ? "gcp-gemini-flash" : "gcp-gemini-pro";
+  }
   if (model.includes("opus")) return "gcp-claude-opus";
   return "gcp-claude";
 }
@@ -442,8 +555,12 @@ export function getModelFamilyForRequest(req: Request): ModelFamily {
     modelFamily = getAzureOpenAIModelFamily(model);
   } else if (req.service === "qwen") {
     modelFamily = "qwen";
+  } else if (req.service === "openrouter") { // <--- ADDED
+    modelFamily = getOpenRouterModuleFamily(model);
   } else if (req.service === "glm") {
     modelFamily = "glm";
+  } else if (req.service === "groq") {
+    modelFamily = getGroqModelFamily(model);
   } else {
     switch (req.outboundApi) {
       case "anthropic-chat":
@@ -479,6 +596,48 @@ export function getModelFamilyForRequest(req: Request): ModelFamily {
   }
 
   return (req.modelFamily = modelFamily);
+}
+
+export function getGroqModelFamily(model: string): GroqModelFamily {
+  const modelLower = model.toLowerCase();
+
+  // Map exact model IDs to model families
+  if (modelLower === "allam-2-7b") return "groq-allam-2-7b";
+  if (modelLower === "groq/compound") return "groq-compound";
+  if (modelLower === "groq/compound-mini") return "groq-compound-mini";
+  if (modelLower === "meta-llama/llama-4-maverick-17b-128e-instruct") return "groq-llama-4-maverick-17b-128e-instruct";
+  if (modelLower === "meta-llama/llama-4-scout-17b-16e-instruct") return "groq-llama-4-scout-17b-16e-instruct";
+  if (modelLower === "meta-llama/llama-guard-4-12b") return "groq-llama-guard-4-12b";
+  if (modelLower === "meta-llama/llama-prompt-guard-2-22m") return "groq-llama-prompt-guard-2-22m";
+  if (modelLower === "meta-llama/llama-prompt-guard-2-86m") return "groq-llama-prompt-guard-2-86m";
+  if (modelLower === "llama-3.3-70b-versatile") return "groq-llama-3.3-70b-versatile";
+  if (modelLower === "llama-3.1-8b-instant") return "groq-llama-3.1-8b-instant";
+  if (modelLower === "moonshotai/kimi-k2-instruct") return "groq-kimi-k2-instruct";
+  if (modelLower === "moonshotai/kimi-k2-instruct-0905") return "groq-kimi-k2-instruct-0905";
+  if (modelLower === "openai/gpt-oss-safeguard-20b") return "groq-gpt-oss-safeguard-20b";
+  if (modelLower === "openai/gpt-oss-120b") return "groq-gpt-oss-120b";
+  if (modelLower === "openai/gpt-oss-20b") return "groq-gpt-oss-20b";
+  if (modelLower === "qwen/qwen3-32b") return "groq-qwen3-32b";
+
+  // Pattern matching fallbacks
+  if (modelLower.includes("allam-2-7b")) return "groq-allam-2-7b";
+  if (modelLower.includes("compound") && !modelLower.includes("mini")) return "groq-compound";
+  if (modelLower.includes("compound-mini")) return "groq-compound-mini";
+  if (modelLower.includes("llama-4-maverick")) return "groq-llama-4-maverick-17b-128e-instruct";
+  if (modelLower.includes("llama-4-scout")) return "groq-llama-4-scout-17b-16e-instruct";
+  if (modelLower.includes("llama-guard-4")) return "groq-llama-guard-4-12b";
+  if (modelLower.includes("llama-prompt-guard-2-22m")) return "groq-llama-prompt-guard-2-22m";
+  if (modelLower.includes("llama-prompt-guard-2-86m")) return "groq-llama-prompt-guard-2-86m";
+  if (modelLower.includes("llama-3.3-70b")) return "groq-llama-3.3-70b-versatile";
+  if (modelLower.includes("llama-3.1-8b")) return "groq-llama-3.1-8b-instant";
+  if (modelLower.includes("kimi-k2-instruct")) return "groq-kimi-k2-instruct";
+  if (modelLower.includes("gpt-oss-safeguard")) return "groq-gpt-oss-safeguard-20b";
+  if (modelLower.includes("gpt-oss-120b")) return "groq-gpt-oss-120b";
+  if (modelLower.includes("gpt-oss-20b")) return "groq-gpt-oss-20b";
+  if (modelLower.includes("qwen3-32b")) return "groq-qwen3-32b";
+
+  // Default fallback
+  return "groq-llama-3.1-8b-instant";
 }
 
 function assertNever(x: never): never {

@@ -64,12 +64,17 @@ export class OpenAIKeyChecker extends KeyCheckerBase<OpenAIKey> {
         updates.organizationVerified = isVerifiedOrg;
         
         // Only remove gpt-image from unverified orgs if they have it
-        if (!isVerifiedOrg && provisionedModels.includes("gpt-image")) {
-          const updatedFamilies = provisionedModels.filter(family => family !== "gpt-image");
-          updates.modelFamilies = updatedFamilies;
-          this.log.warn({ key: key.hash }, "Key's organization is not verified. Removing gpt-image-1 from available models.");
+        if(!isVerifiedOrg) {
+          if (provisionedModels.includes("gpt-image-2")) {
+            const updatedFamilies = provisionedModels.filter(family => family !== "gpt-image-2");
+            updates.modelFamilies = updatedFamilies;
+            this.log.warn({ key: key.hash }, "Key's organization is not verified. Removing gpt-image-2 from available models.");
+          } else if (provisionedModels.includes("gpt-image")) {
+            const updatedFamilies = provisionedModels.filter(family => family !== "gpt-image");
+            updates.modelFamilies = updatedFamilies;
+            this.log.warn({ key: key.hash }, "Key's organization is not verified. Removing gpt-image-1 from available models.");
+          }
         }
-        
         if (isVerifiedOrg) {
           this.log.info({ key: key.hash }, "Verified organization status for key. Can use streaming for GPT-5, o1, o3, and gpt-image-1.");
         } else {
@@ -78,7 +83,10 @@ export class OpenAIKeyChecker extends KeyCheckerBase<OpenAIKey> {
       } catch (error) {
         // If test fails, assume no access to be safe
         updates.organizationVerified = false;
-        if (provisionedModels.includes("gpt-image")) {
+        if (provisionedModels.includes("gpt-image-2")) {
+          const updatedFamilies = provisionedModels.filter(family => family !== "gpt-image-2");
+          updates.modelFamilies = updatedFamilies;
+        } else if (provisionedModels.includes("gpt-image")) {
           const updatedFamilies = provisionedModels.filter(family => family !== "gpt-image");
           updates.modelFamilies = updatedFamilies;
         }

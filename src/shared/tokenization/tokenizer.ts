@@ -33,6 +33,7 @@ import { findByAnthropicId } from "../claude-models";
 
 const log = logger.child({ module: "tokenizer" });
 
+
 export async function init() {
   initClaude();
   initOpenAi();
@@ -110,7 +111,6 @@ export async function countTokens({
   completion,
 }: TokenCountRequest): Promise<TokenCountResult> {
   const time = process.hrtime();
-
   // For prompt counting, try remote APIs first (only when enabled, have a key, and counting prompts)
   if (config.useRemoteTokenCounting && prompt && req.key) {
     try {
@@ -191,6 +191,7 @@ export async function countTokens({
   }
 
   // Fall back to local tokenization
+
   switch (service) {
     case "anthropic-chat":
     case "anthropic-text":

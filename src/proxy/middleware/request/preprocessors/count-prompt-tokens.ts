@@ -3,18 +3,19 @@ import { countTokens } from "../../../../shared/tokenization";
 import { assertNever } from "../../../../shared/utils";
 import { OpenAIChatMessage } from "../../../../shared/api-schemas";
 import { GoogleAIChatMessage } from "../../../../shared/api-schemas/google-ai";
+import { keyPool } from "../../../../shared/key-management";
+import { config } from "../../../../config";
+
 import {
   AnthropicChatMessage,
   flattenAnthropicMessages,
 } from "../../../../shared/api-schemas/anthropic";
-import {
-  MistralAIChatMessage,
+import { 
+  MistralAIChatMessage, 
   ContentItem,
-  isMistralVisionModel
+  isMistralVisionModel 
 } from "../../../../shared/api-schemas/mistral-ai";
 import { isGrokVisionModel } from "../../../../shared/api-schemas/xai";
-import { keyPool } from "../../../../shared/key-management";
-import { config } from "../../../../config";
 
 /**
  * Given a request with an already-transformed body, counts the number of
@@ -23,11 +24,12 @@ import { config } from "../../../../config";
  * If remote token counting is enabled, we temporarily get a key from the pool
  * to use the remote API, then clear it. The actual key assignment happens
  * later in the mutators after the request is dequeued.
+
  */
 export const countPromptTokens: RequestPreprocessor = async (req) => {
   const service = req.outboundApi;
   let result;
-
+  
   // For remote token counting, temporarily get a key from the pool
   // We don't permanently assign it - that happens in mutators after dequeue
   // IMPORTANT: Don't pass req.body here to avoid premature cache fingerprinting
@@ -158,7 +160,6 @@ export const countPromptTokens: RequestPreprocessor = async (req) => {
   req.log.debug({ result: result }, "Counted prompt tokens.");
   req.tokenizerInfo = req.tokenizerInfo ?? {};
   req.tokenizerInfo = { ...req.tokenizerInfo, ...result };
-
   // Clear the temporary key if we assigned one for token counting
   // The real key will be assigned later in mutators after dequeue
   if (tempKey && !hadKey) {
@@ -168,4 +169,5 @@ export const countPromptTokens: RequestPreprocessor = async (req) => {
       "Cleared temporary key after token counting"
     );
   }
+
 };

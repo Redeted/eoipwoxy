@@ -5,6 +5,7 @@ import path from "path";
 import pino from "pino";
 import type { LLMService, ModelFamily } from "./shared/models";
 import { MODEL_FAMILIES } from "./shared/models";
+import fs from "fs";
 
 dotenv.config();
 
@@ -66,7 +67,14 @@ type Config = {
    * Comma-delimited list of Moonshot API keys.
    */
   moonshotKey?: string;
-
+  /**
+   * Comma-delimited list of OpenRouter API keys.
+   */
+  openRouterKey?: string; // <--- ADDED
+  /**
+   * Comma-delimited list of Groq API keys.
+   */
+  groqKey?: string;
   /**
    * Comma-delimited list of AWS credentials. Each credential item should be a
    * colon-delimited list of access key, secret key, and AWS region.
@@ -154,8 +162,10 @@ type Config = {
    * - `none`: No captcha verification; tokens are issued manually.
    * - `proof_of_work`: Users must solve an Argon2 proof of work to obtain a
    *    temporary usertoken valid for a limited period.
+   * - `proof_of_work_questions`: Users must answer questions correctly, then
+   *    solve a proof-of-work to obtain a temporary usertoken.
    */
-  captchaMode: "none" | "proof_of_work";
+  captchaMode: "none" | "proof_of_work" | "proof_of_work_questions";
   /**
    * Duration (in hours) for which a PoW-issued temporary user token is valid.
    */
@@ -201,6 +211,30 @@ type Config = {
    */
   powTokenPurgeHours: number;
   /**
+   * Number of questions to show in proof_of_work_questions mode.
+   */
+  questionCount: number;
+  /**
+   * Whether to show new questions on refresh token in proof_of_work_questions mode.
+   */
+  refreshQuestions: boolean;
+  /**
+   * Whether to allow retry on error in proof_of_work_questions mode.
+   */
+  allowRetryOnError: boolean;
+  /**
+   * Whether to randomize questions in proof_of_work_questions mode.
+   */
+  randomizeQuestions: boolean;
+  /**
+   * Whether to randomize answer options in proof_of_work_questions mode.
+   */
+  shuffleAnswers: boolean;
+  /**
+   * Whether to require all correct answers in proof_of_work_questions mode.
+   */
+  requireAllCorrect: boolean;
+    /**
    * Maximum number of active temporary user tokens that can be associated with
    * a single IP address. Note that this may impact users sending requests from
    * hosted AI chat clients such as Agnaistic or RisuAI, as they may share IPs.
@@ -220,6 +254,7 @@ type Config = {
    * - Defaults to 0, which means no limit beyond OpenAI's stated maximums.
    */
   maxContextTokensOpenAI: number;
+
   /**
    * For Anthropic, the maximum number of context tokens a user can request.
    * Claude context limits can prevent requests from tying up concurrency slots
@@ -285,8 +320,7 @@ type Config = {
   /** Google Sheets spreadsheet ID. */
   googleSheetsSpreadsheetId?: string;
   /** Whether to periodically check keys for usage and validity. */
-  checkKeys: boolean;
-  /**
+    /**
    * Whether to use remote API token counting endpoints for Anthropic, AWS
    * Bedrock, and GCP Vertex AI. When enabled, the proxy will use the provider's
    * token counting API to get accurate token counts for prompts (including
@@ -294,6 +328,8 @@ type Config = {
    * Falls back to local tokenization if remote counting fails.
    */
   useRemoteTokenCounting: boolean;
+
+  checkKeys: boolean;
   /** Whether to publicly show total token costs on the info page. */
   showTokenCosts: boolean;
   /**
@@ -522,6 +558,8 @@ export const config: Config = {
   xaiKey: getEnvWithDefault("XAI_KEY", ""),
   cohereKey: getEnvWithDefault("COHERE_KEY", ""),
   moonshotKey: getEnvWithDefault("MOONSHOT_KEY", ""),
+  openRouterKey: getEnvWithDefault("OPENROUTER_AI_KEY", ""),
+  groqKey: getEnvWithDefault("GROQ_KEY", ""),
   awsCredentials: getEnvWithDefault("AWS_CREDENTIALS", ""),
   gcpCredentials: getEnvWithDefault("GCP_CREDENTIALS", ""),
   azureCredentials: getEnvWithDefault("AZURE_CREDENTIALS", ""),
@@ -547,6 +585,12 @@ export const config: Config = {
   powDifficultyLevel: getEnvWithDefault("POW_DIFFICULTY_LEVEL", "low"),
   powChallengeTimeout: getEnvWithDefault("POW_CHALLENGE_TIMEOUT", 30),
   powTokenPurgeHours: getEnvWithDefault("POW_TOKEN_PURGE_HOURS", 48),
+  questionCount: getEnvWithDefault("QUESTION_COUNT", 5),
+  refreshQuestions: getEnvWithDefault("REFRESH_QUESTIONS", "true") === "true",
+  allowRetryOnError: getEnvWithDefault("ALLOW_RETRY_ON_ERROR", "true") === "true",
+  randomizeQuestions: getEnvWithDefault("RANDOMIZE_QUESTIONS", "true") === "true",
+  shuffleAnswers: getEnvWithDefault("SHUFFLE_ANSWERS", "true") === "true",
+  requireAllCorrect: getEnvWithDefault("REQUIRE_ALL_CORRECT", "true") === "true",
   firebaseRtdbUrl: getEnvWithDefault("FIREBASE_RTDB_URL", undefined),
   firebaseKey: getEnvWithDefault("FIREBASE_KEY", undefined),
   textModelRateLimit: getEnvWithDefault("TEXT_MODEL_RATE_LIMIT", 4),
@@ -721,11 +765,11 @@ export async function assertConfigIsValid() {
   }
 
   if (
-    config.captchaMode === "proof_of_work" &&
+    (config.captchaMode === "proof_of_work" || config.captchaMode === "proof_of_work_questions") &&
     config.gatekeeper !== "user_token"
   ) {
     throw new Error(
-      "Captcha mode 'proof_of_work' requires gatekeeper mode 'user_token'."
+      "Captcha mode 'proof_of_work' and 'proof_of_work_questions' require gatekeeper mode 'user_token'."
     );
   }
 
@@ -740,6 +784,30 @@ export async function assertConfigIsValid() {
       throw new Error(
         "Invalid POW_DIFFICULTY_LEVEL. Must be one of: low, medium, high, extreme, or a positive integer."
       );
+    }
+  }
+
+  if (config.captchaMode === "proof_of_work_questions") {
+    // Check if questions.json file exists
+    const questionsPath = path.join(process.cwd(), "questions.json");
+
+    if (!fs.existsSync(questionsPath)) {
+      throw new Error(
+        "Captcha mode 'proof_of_work_questions' requires 'questions.json' file to exist in the project root."
+      );
+    }
+
+    try {
+      const questionsData = JSON.parse(fs.readFileSync(questionsPath, "utf8"));
+      if (!questionsData.questions || !Array.isArray(questionsData.questions) || questionsData.questions.length === 0) {
+        throw new Error("questions.json must contain a non-empty 'questions' array.");
+      }
+    } catch (err) {
+      throw new Error(`Invalid questions.json file: ${err.message}`);
+    }
+
+    if (config.questionCount < 1 || config.questionCount > 20) {
+      throw new Error("QUESTION_COUNT must be between 1 and 20.");
     }
   }
 
@@ -835,6 +903,8 @@ export const OMITTED_KEYS = [
   "glmKey",
   "moonshotKey",
   "mistralAIKey",
+  "openRouterKey",
+  "groqKey",
   "awsCredentials",
   "gcpCredentials",
   "azureCredentials",

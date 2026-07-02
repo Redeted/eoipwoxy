@@ -5,7 +5,7 @@
 
 import fs from "fs";
 import express, { Router, Request, Response } from "express";
-import showdown from "showdown";
+import { Marked } from "marked";
 import { config } from "./config";
 import { buildInfo, ServiceInfo } from "./service-info";
 import { getLastNImages } from "./shared/file-storage/image-history";
@@ -32,6 +32,23 @@ const MODEL_FAMILY_FRIENDLY_NAME: { [f in ModelFamily]: string } = {
   cohere: "Cohere",
   deepseek: "Deepseek",
   xai: "Grok",
+  groq: "Groq",
+  "groq-allam-2-7b": "Allam 2.7B",
+  "groq-compound": "Groq Compound",
+  "groq-compound-mini": "Groq Compound Mini",
+  "groq-llama-4-maverick-17b-128e-instruct": "Llama 4 Maverick 17B",
+  "groq-llama-4-scout-17b-16e-instruct": "Llama 4 Scout 17B",
+  "groq-llama-guard-4-12b": "Llama Guard 4 12B",
+  "groq-llama-prompt-guard-2-22m": "Llama Prompt Guard 2 22M",
+  "groq-llama-prompt-guard-2-86m": "Llama Prompt Guard 2 86M",
+  "groq-llama-3.3-70b-versatile": "Llama 3.3 70B Versatile",
+  "groq-llama-3.1-8b-instant": "Llama 3.1 8B Instant",
+  "groq-kimi-k2-instruct": "Kimi K2 Instruct",
+  "groq-kimi-k2-instruct-0905": "Kimi K2 Instruct 0905",
+  "groq-gpt-oss-safeguard-20b": "GPT OSS Safeguard 20B",
+  "groq-gpt-oss-120b": "GPT OSS 120B",
+  "groq-gpt-oss-20b": "GPT OSS 20B",
+  "groq-qwen3-32b": "Qwen3 32B",
   moonshot: "Moonshot",
   turbo: "GPT-4o Mini / 3.5 Turbo",
   gpt4: "GPT-4",
@@ -42,11 +59,12 @@ const MODEL_FAMILY_FRIENDLY_NAME: { [f in ModelFamily]: string } = {
   "gpt41-mini": "GPT-4.1 Mini",
   "gpt41-nano": "GPT-4.1 Nano",
   gpt5: "GPT-5",
-  gpt51: "GPT-5.1",
   "gpt5-mini": "GPT-5 Mini",
   "gpt5-nano": "GPT-5 Nano",
   "gpt5-pro": "GPT-5 Pro",
   "gpt5-chat-latest": "GPT-5 Chat Latest",
+  "gpt51": "GPT-5.1",
+  "gpt51-chat-latest": "GPT-5.1 Chat Latest",
   gpt45: "GPT-4.5",
   o1: "OpenAI o1",
   "o1-mini": "OpenAI o1 mini",
@@ -58,6 +76,7 @@ const MODEL_FAMILY_FRIENDLY_NAME: { [f in ModelFamily]: string } = {
   "codex-mini": "OpenAI Codex Mini",
   "dall-e": "DALL-E",
   "gpt-image": "GPT Image",
+  "gpt-image-2": "GPT Image 2",
   claude: "Claude (Sonnet)",
   "claude-opus": "Claude (Opus)",
   "gemini-flash": "Gemini Flash",
@@ -75,6 +94,8 @@ const MODEL_FAMILY_FRIENDLY_NAME: { [f in ModelFamily]: string } = {
   "aws-mistral-large": "AWS Mistral Large",
   "gcp-claude": "GCP Claude (Sonnet)",
   "gcp-claude-opus": "GCP Claude (Opus)",
+  "gcp-gemini-flash": "GCP Gemini Flash",
+  "gcp-gemini-pro": "GCP Gemini Pro",
   "azure-turbo": "Azure GPT-3.5 Turbo",
   "azure-gpt4": "Azure GPT-4",
   "azure-gpt4-32k": "Azure GPT-4 32k",
@@ -85,11 +106,12 @@ const MODEL_FAMILY_FRIENDLY_NAME: { [f in ModelFamily]: string } = {
   "azure-gpt41-mini": "Azure GPT-4.1 Mini",
   "azure-gpt41-nano": "Azure GPT-4.1 Nano",
   "azure-gpt5": "Azure GPT-5",
-  "azure-gpt51": "Azure GPT-5.1",
   "azure-gpt5-mini": "Azure GPT-5 Mini",
   "azure-gpt5-nano": "Azure GPT-5 Nano",
   "azure-gpt5-pro": "GPT-5 Pro (Azure)",
   "azure-gpt5-chat-latest": "Azure GPT-5 Chat Latest",
+  "azure-gpt51": "Azure GPT-5.1",
+  "azure-gpt51-chat-latest": "Azure GPT-5.1 Chat Latest",
   "azure-o1": "Azure o1",
   "azure-o1-mini": "Azure o1 mini",
   "azure-o1-pro": "Azure o1 pro",
@@ -100,9 +122,16 @@ const MODEL_FAMILY_FRIENDLY_NAME: { [f in ModelFamily]: string } = {
   "azure-codex-mini": "Azure Codex Mini",
   "azure-dall-e": "Azure DALL-E",
   "azure-gpt-image": "Azure GPT Image",
+  "azure-gpt-image-2": "Azure GPT Image 2",
+  "openrouter-paid": "OpenRouter Paid Keys", // <--- ADDED
+  "openrouter-free": "OpenRouter Free Models", // <--- ADDED
 };
 
-const converter = new showdown.Converter();
+const converter = new Marked({
+  gfm: true,
+  breaks: true,
+});
+
 
 /* optional markdown greeting */
 const customGreeting = fs.existsSync("greeting.md")
@@ -239,6 +268,7 @@ export function renderPage(info: ServiceInfo) {
       <pre>${JSON.stringify(info, null, 2)}</pre>
     </body>
     </html>`;
+
     }
 
 
@@ -258,7 +288,7 @@ This proxy keeps full logs of all prompts and AI responses. Prompt logs are anon
   }
 
   if (config.staticServiceInfo) {
-    return converter.makeHtml(infoBody + customGreeting);
+    return converter.parse(infoBody + customGreeting, { async: false });
   }
 
   const waits: string[] = [];
@@ -282,14 +312,17 @@ This proxy keeps full logs of all prompts and AI responses. Prompt logs are anon
   infoBody += customGreeting;
   infoBody += buildRecentImageSection();
 
-  return converter.makeHtml(infoBody);
+  return converter.parse(infoBody, { async: false });
 }
 
 function getSelfServiceLinks() {
   if (config.gatekeeper !== "user_token") return "";
   const links = [["Check your user token", "/user/lookup"]];
   if (config.captchaMode !== "none") {
-    links.unshift(["Request a user token", "/user/captcha"]);
+    const captchaLink = config.captchaMode === "proof_of_work_questions"
+      ? "/user/questions-captcha"
+      : "/user/captcha";
+    links.unshift(["Request a user token", captchaLink]);
   }
   return `<div class="self-service-links">${links
     .map(([t, l]) => `<a href="${l}">${t}</a>`)
@@ -310,7 +343,9 @@ function buildRecentImageSection() {
     "azure-dall-e",
     "dall-e",
     "gpt-image",
+    "gpt-image-2",
     "azure-gpt-image",
+    "azure-gpt-image-2",
   ];
   // Condition 1: Is the feature enabled via config?
   // Condition 2: Is at least one relevant image model family allowed in config?
@@ -393,7 +428,7 @@ infoPageRouter.post(LOGIN_ROUTE, (req, res) => {
     // Token-based authentication (using any valid user token)
     const token = (req.body.token || "").trim();
     const user = getUser(token); // returns undefined if invalid
-    
+
     if (user && !user.disabledAt) {
       // Only allow access if user exists AND is not disabled
       req.session!.infoPageAuthed = true;
@@ -423,4 +458,3 @@ if (config.enableInfoPageLogin) {
 /*  ─── Removed the public /status route :  simply not added ─── */
 
 export { infoPageRouter };
-

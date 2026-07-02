@@ -9,6 +9,7 @@ const OPENAI_MAX_CONTEXT = config.maxContextTokensOpenAI;
 // todo: make configurable
 const GOOGLE_AI_MAX_CONTEXT = 100000;
 const MISTRAL_AI_MAX_CONTENT = 131072;
+const OPENROUTER_MAX_CONTEXT = 250000;
 
 /**
  * Assigns `req.promptTokens` and `req.outputTokens` based on the request body
@@ -45,6 +46,10 @@ export const validateContextSize: RequestPreprocessor = async (req) => {
     case "openai-image":
       return;
     default:
+      if (req.service === "openrouter") { // <--- ADDED
+        proxyMax = OPENROUTER_MAX_CONTEXT;
+        break;
+      }
       assertNever(req.outboundApi);
   }
   proxyMax ||= Number.MAX_SAFE_INTEGER;
@@ -67,13 +72,9 @@ export const validateContextSize: RequestPreprocessor = async (req) => {
     modelMax = 1000000;
   } else if (model.match(/^gpt-4\.1-nano(-\d{4}-\d{2}-\d{2})?$/)) {
     modelMax = 1000000;
-  } else if (model.match(/^gpt-5\.1(-\d{4}-\d{2}-\d{2})?$/)) {
-    modelMax = 400000;
-  } else if (model.match(/^gpt-5\.1-mini(-\d{4}-\d{2}-\d{2})?$/)) {
-    modelMax = 400000;
-  } else if (model.match(/^gpt-5\.1-nano(-\d{4}-\d{2}-\d{2})?$/)) {
-    modelMax = 400000;
   } else if (model.match(/^gpt-5(-\d{4}-\d{2}-\d{2})?$/)) {
+    modelMax = 400000;
+  } else if (model.match(/^gpt-5.1(-\d{4}-\d{2}-\d{2})?$/)) {
     modelMax = 400000;
   } else if (model.match(/^gpt-5-mini(-\d{4}-\d{2}-\d{2})?$/)) {
     modelMax = 400000;
@@ -81,6 +82,8 @@ export const validateContextSize: RequestPreprocessor = async (req) => {
     modelMax = 400000;
   } else if (model.match(/^gpt-5-chat-latest$/)) {
     modelMax = 400000;
+  } else if (model.match(/^gpt-5.1-chat-latest$/)) {
+    modelMax = 128000;
   } else if (model.match(/^gpt-5-codex(-latest|-\d{4}-\d{2}-\d{2})?$/)) {
     modelMax = 400000;
   } else if (model.match(/^chatgpt-4o/)) {
@@ -132,7 +135,7 @@ export const validateContextSize: RequestPreprocessor = async (req) => {
   } else if (model.match(/^claude-(?:sonnet|opus|haiku)-4(?:-5)?/)) {
     modelMax = 1000000;
   } else if (model.match(/^gemini-/)) {
-    modelMax = 1024000;
+    modelMax = 250000;
   } else if (model.match(/^anthropic\.claude-3/)) {
     modelMax = 200000;
   } else if (model.match(/^anthropic\.claude-(?:sonnet|opus|haiku)-4(?:-5)?/)) {
@@ -142,7 +145,7 @@ export const validateContextSize: RequestPreprocessor = async (req) => {
   } else if (model.match(/^anthropic\.claude/)) {
     modelMax = 100000;
   } else if (model.match(/^deepseek/)) {
-    modelMax = 1000000;
+    modelMax = 256000;
   } else if (model.match(/^kimi-k2/)) {
     // Kimi K2 models have 245k context window
     modelMax = 245000;
@@ -161,6 +164,23 @@ export const validateContextSize: RequestPreprocessor = async (req) => {
   } else if (model.match(/^glm/)) {
     // GLM models have 131k context window
     modelMax = 131000;
+  } else if (req.service === "groq") {
+    // Groq models have different context windows:
+    // llama-3.1-8b-instant: 131,072 tokens
+    // llama-3.3-70b-versatile: 131,072 tokens (32,768 max completion)
+    // gpt-oss-120b/gpt-oss-20b: 131,072 tokens
+    // llama-4-maverick/scout: 131,072 tokens
+    // kimi-k2-instruct-0905: 262,144 tokens
+    // Prompt Guard models: 512 tokens
+    if (model.includes("llama-prompt-guard") || model.includes("llama-guard")) {
+      modelMax = 512; // Prompt Guard models have very small context
+    } else if (model.includes("kimi-k2-instruct-0905")) {
+      modelMax = 262144; // 262k context window
+    } else if (model.includes("llama-3.3-70b-versatile")) {
+      modelMax = 131072; // 131k context, 32k max completion
+    } else {
+      modelMax = 131072; // Default for most Groq models
+    }
   } else if (model.match(/^grok-4/)) {
     modelMax = 256000;
   } else if (model.match(/^grok-4-fast/)) {
@@ -169,6 +189,9 @@ export const validateContextSize: RequestPreprocessor = async (req) => {
     modelMax = 128000;
   } else if (model.match(/^magistral/)) {
     modelMax = 40000;
+  } else if (req.service === "openrouter") { // <--- ADDED: Catch-all for OR models
+    // Set a very high limit for OpenRouter models, relying more on proxyMax and OR's own limits.
+    modelMax = OPENROUTER_MAX_CONTEXT; 
   } else if (model.match(/tral/)) {
     // catches mistral, mixtral, codestral, mathstral, etc. mistral models have
     // no name convention and wildly different context windows so this is a

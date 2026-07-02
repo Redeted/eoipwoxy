@@ -19,6 +19,8 @@ export interface GcpKey extends Key {
   sonnetEnabled: boolean;
   haikuEnabled: boolean;
   sonnet35Enabled: boolean;
+  geminiFlashEnabled: boolean;
+  geminiProEnabled: boolean;
 
   privateKey?: crypto.webcrypto.CryptoKey;
   /** Cached access token for GCP APIs. */
@@ -75,6 +77,8 @@ export class GcpKeyProvider implements KeyProvider<GcpKey> {
         sonnetEnabled: true,
         haikuEnabled: false,
         sonnet35Enabled: false,
+        geminiFlashEnabled: false,
+        geminiProEnabled: false,
         accessToken: "",
         accessTokenExpiresAt: 0,
         tokenUsage: {}, // Initialize new tokenUsage field

@@ -1,5 +1,5 @@
 .aider*
-.env*
+.env
 !.env.vault
 .venv
 .vscode
@@ -9,3 +9,4 @@ greeting.md
 node_modules
 .windsurfrules
 http-client.private.env.json
+data

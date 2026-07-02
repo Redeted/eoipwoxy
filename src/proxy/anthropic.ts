@@ -10,7 +10,7 @@ import { ProxyResHandlerWithBody } from "./middleware/response";
 import { createQueuedProxyMiddleware } from "./middleware/request/proxy-middleware-factory";
 import { ProxyReqManager } from "./middleware/request/proxy-req-manager";
 import { claudeModels } from "../shared/claude-models";
-import { validateClaude41OpusParameters } from "../shared/claude-4-1-validation";
+import { validateSupportForTopPAndTemp } from "../shared/claude-4-1-validation";
 
 let modelsCache: any = null;
 let modelsCacheTime = 0;
@@ -178,7 +178,7 @@ function maybeReassignModel(req: Request) {
  */
 function setAnthropicBetaHeader(req: Request) {
   // Validate Claude 4.1 Opus parameters before processing
-  validateClaude41OpusParameters(req);
+  validateSupportForTopPAndTemp(req);
   
   const { max_tokens_to_sample } = req.body;
   const model = req.body.model;

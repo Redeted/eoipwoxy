@@ -65,6 +65,13 @@ export function getAxiosInstance() {
   if (axiosInstance) return axiosInstance;
 
   const [httpAgent, httpsAgent] = getHttpAgents();
-  axiosInstance = axios.create({ httpAgent, httpsAgent, proxy: false });
+  axiosInstance = axios.create({
+    httpAgent,
+    httpsAgent,
+    proxy: false,
+    headers: {
+      'User-Agent': 'RooCode/3.41.3'
+    }
+  });
   return axiosInstance;
 }
