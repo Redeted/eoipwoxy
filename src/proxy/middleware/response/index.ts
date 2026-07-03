@@ -834,7 +834,7 @@ async function handleGoogleAIBadRequestError(
       { key: req.key?.hash, error: text },
       "Google API key appears to be inoperative."
     );
-    keyPool.disable(req.key!, "revoked");
+    keyPool.markRateLimited(req.key!);
     await reenqueueRequest(req);
     throw new RetryableError("Google API key inoperative, retrying with different key.");
   } else {
