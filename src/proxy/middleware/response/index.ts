@@ -452,7 +452,7 @@ const handleUpstreamErrors: ProxyResHandlerWithBody = async (
         break;
       case "openrouter":
           await handleOpenRouterError(req, errorPayload);
-          break;
+        break;
       default:
         assertNever(service as never);
     }
@@ -479,17 +479,17 @@ const handleUpstreamErrors: ProxyResHandlerWithBody = async (
           "AWS Bedrock service unavailable (503), re-enqueued request."
         );
       case "google-ai":
-          // Re-enqueue on any 503 from Google
-    
+      // Re-enqueue on any 503 from Google
+
         req.log.warn(
           { key: req.key?.hash, errorType, errorPayload },
                   `Google service unavailable (503). Re-enqueueing request.`
-                                                      );
+                                                  );
         await reenqueueRequest(req);
         throw new RetryableError(
-          "Gemini service unavailable (503), re-enqueued request."
-          );
-    
+        "Gemini service unavailable (503), re-enqueued request."
+        );
+
       case "qwen":
         await handleQwenServerOverloadError(req, errorPayload);
         break;
@@ -913,10 +913,12 @@ async function handleGoogleAIRateLimitError(
           "Google API key appears to be completely disabled and will be removed from rotation."
         );
         keyPool.disable(req.key, "revoked");
-        errorPayload.proxy_note = `Assigned API key cannot be used.`;
+        await reenqueueRequest(req);
+        throw new RetryableError("Google API key inoperative, retrying with different key.");
+
         return;
       }
-
+/*
       // Check if this is a quota exhaustion error rather than just a rate limit
       const isQuotaExhausted = quotaExhaustedMsgs.some(pattern => pattern.test(text) || pattern.test(errorMessage));
       
@@ -993,7 +995,7 @@ async function handleGoogleAIRateLimitError(
         await reenqueueRequest(req);
         throw new RetryableError("Quota-exhausted request re-enqueued with a different key.");
       }
-
+*/
       // Standard rate limiting - just mark as rate limited temporarily
       req.log.debug({ key: req.key.hash, error: text }, "Google API request rate limited, will retry.");
       keyPool.markRateLimited(req.key);
