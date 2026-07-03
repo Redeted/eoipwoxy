@@ -94,8 +94,8 @@ const MODEL_PRICING: Record<ModelFamily, { input: number; output: number } | und
   "groq-llama-guard-4-12b": { input: 0.20, output: 0.20 }, // Meta Llama Guard 4 12B
   "groq-llama-prompt-guard-2-22m": { input: 0.03, output: 0.03 }, // Meta Llama Prompt Guard 2 22M
   "groq-llama-prompt-guard-2-86m": { input: 0.04, output: 0.04 }, // Meta Llama Prompt Guard 2 86M
-  "groq-llama-3.3-70b-versatile": { input: 0.59, output: 0.79 }, // Meta Llama 3.3 70B
-  "groq-llama-3.1-8b-instant": { input: 0.05, output: 0.08 }, // Meta Llama 3.1 8B
+  "groq-llama-3-3-70b-versatile": { input: 0.59, output: 0.79 }, // Meta Llama 3.3 70B
+  "groq-llama-3-1-8b-instant": { input: 0.05, output: 0.08 }, // Meta Llama 3.1 8B
   "groq-kimi-k2-instruct": { input: 0.50, output: 0.50 }, // Estimated pricing for Kimi K2
   "groq-kimi-k2-instruct-0905": { input: 1.00, output: 3.00 }, // Moonshot AI Kimi K2 0905
   "groq-gpt-oss-safeguard-20b": { input: 0.075, output: 0.30 }, // OpenAI Safety GPT OSS 20B

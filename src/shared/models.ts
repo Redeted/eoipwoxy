@@ -83,8 +83,8 @@ export type GroqModelFamily =
   | "groq-llama-guard-4-12b"
   | "groq-llama-prompt-guard-2-22m"
   | "groq-llama-prompt-guard-2-86m"
-  | "groq-llama-3.3-70b-versatile"
-  | "groq-llama-3.1-8b-instant"
+  | "groq-llama-3-3-70b-versatile"
+  | "groq-llama-3-1-8b-instant"
   | "groq-kimi-k2-instruct"
   | "groq-kimi-k2-instruct-0905"
   | "groq-gpt-oss-safeguard-20b"
@@ -203,8 +203,8 @@ export const MODEL_FAMILIES = (<A extends readonly ModelFamily[]>(
   "groq-llama-guard-4-12b",
   "groq-llama-prompt-guard-2-22m",
   "groq-llama-prompt-guard-2-86m",
-  "groq-llama-3.3-70b-versatile",
-  "groq-llama-3.1-8b-instant",
+  "groq-llama-3-3-70b-versatile",
+  "groq-llama-3-1-8b-instant",
   "groq-kimi-k2-instruct",
   "groq-kimi-k2-instruct-0905",
   "groq-gpt-oss-safeguard-20b",
@@ -326,8 +326,8 @@ export const MODEL_FAMILY_SERVICE: {
   "groq-llama-guard-4-12b": "groq",
   "groq-llama-prompt-guard-2-22m": "groq",
   "groq-llama-prompt-guard-2-86m": "groq",
-  "groq-llama-3.3-70b-versatile": "groq",
-  "groq-llama-3.1-8b-instant": "groq",
+  "groq-llama-3-3-70b-versatile": "groq",
+  "groq-llama-3-1-8b-instant": "groq",
   "groq-kimi-k2-instruct": "groq",
   "groq-kimi-k2-instruct-0905": "groq",
   "groq-gpt-oss-safeguard-20b": "groq",
@@ -610,8 +610,8 @@ export function getGroqModelFamily(model: string): GroqModelFamily {
   if (modelLower === "meta-llama/llama-guard-4-12b") return "groq-llama-guard-4-12b";
   if (modelLower === "meta-llama/llama-prompt-guard-2-22m") return "groq-llama-prompt-guard-2-22m";
   if (modelLower === "meta-llama/llama-prompt-guard-2-86m") return "groq-llama-prompt-guard-2-86m";
-  if (modelLower === "llama-3.3-70b-versatile") return "groq-llama-3.3-70b-versatile";
-  if (modelLower === "llama-3.1-8b-instant") return "groq-llama-3.1-8b-instant";
+  if (modelLower === "llama-3.3-70b-versatile") return "groq-llama-3-3-70b-versatile";
+  if (modelLower === "llama-3.1-8b-instant") return "groq-llama-3-1-8b-instant";
   if (modelLower === "moonshotai/kimi-k2-instruct") return "groq-kimi-k2-instruct";
   if (modelLower === "moonshotai/kimi-k2-instruct-0905") return "groq-kimi-k2-instruct-0905";
   if (modelLower === "openai/gpt-oss-safeguard-20b") return "groq-gpt-oss-safeguard-20b";
@@ -628,8 +628,8 @@ export function getGroqModelFamily(model: string): GroqModelFamily {
   if (modelLower.includes("llama-guard-4")) return "groq-llama-guard-4-12b";
   if (modelLower.includes("llama-prompt-guard-2-22m")) return "groq-llama-prompt-guard-2-22m";
   if (modelLower.includes("llama-prompt-guard-2-86m")) return "groq-llama-prompt-guard-2-86m";
-  if (modelLower.includes("llama-3.3-70b")) return "groq-llama-3.3-70b-versatile";
-  if (modelLower.includes("llama-3.1-8b")) return "groq-llama-3.1-8b-instant";
+  if (modelLower.includes("llama-3.3-70b")) return "groq-llama-3-3-70b-versatile";
+  if (modelLower.includes("llama-3.1-8b")) return "groq-llama-3-1-8b-instant";
   if (modelLower.includes("kimi-k2-instruct")) return "groq-kimi-k2-instruct";
   if (modelLower.includes("gpt-oss-safeguard")) return "groq-gpt-oss-safeguard-20b";
   if (modelLower.includes("gpt-oss-120b")) return "groq-gpt-oss-120b";
@@ -637,7 +637,7 @@ export function getGroqModelFamily(model: string): GroqModelFamily {
   if (modelLower.includes("qwen3-32b")) return "groq-qwen3-32b";
 
   // Default fallback
-  return "groq-llama-3.1-8b-instant";
+  return "groq-llama-3-1-8b-instant";
 }
 
 function assertNever(x: never): never {
