@@ -297,8 +297,10 @@ const handleUpstreamErrors: ProxyResHandlerWithBody = async (
       keyPool.disable(req.key!, "quota");
       await reenqueueRequest(req);
       throw new RetryableError("Deepseek key has insufficient balance, retrying with different key.");
-    } else if (service === "openrouter") {
-      await handleOpenRouterError(req, errorPayload);
+    } else if (service === "google-ai") {
+	  keyPool.disable(req.key!, "revoked");
+      await reenqueueRequest(req);
+      throw new RetryableError("Google AI key prepayment credits depleted, retrying with different key.");
     }
   } else if (statusCode === 405) {
     // Xai specific - method not allowed, treat as retryable
