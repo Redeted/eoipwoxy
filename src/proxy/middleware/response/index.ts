@@ -262,7 +262,7 @@ const handleUpstreamErrors: ProxyResHandlerWithBody = async (
         await handleAnthropicAwsBadRequestError(req, errorPayload);
         break;
       case "google-ai":
-        await handleBadRequestError(req, errorPayload);
+        await handleGoogleAIBadRequestError(req, errorPayload);
         break;
       case "cohere":
         errorPayload.proxy_note = `The upstream Cohere API rejected the request. Check the error message for details.`;
@@ -326,7 +326,7 @@ const handleUpstreamErrors: ProxyResHandlerWithBody = async (
         }
         return;
       case "google-ai":
-        await handle403Error(req, errorPayload);
+        await handleGoogleAI403Error(req, errorPayload);
         break;
       case "aws":
         switch (errorType) {
