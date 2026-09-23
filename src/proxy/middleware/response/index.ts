@@ -262,7 +262,7 @@ const handleUpstreamErrors: ProxyResHandlerWithBody = async (
         await handleAnthropicAwsBadRequestError(req, errorPayload);
         break;
       case "google-ai":
-        await handleGoogleAIBadRequestError(req, errorPayload);
+        await handleBadRequestError(req, errorPayload);
         break;
       case "cohere":
         errorPayload.proxy_note = `The upstream Cohere API rejected the request. Check the error message for details.`;
@@ -326,7 +326,7 @@ const handleUpstreamErrors: ProxyResHandlerWithBody = async (
         }
         return;
       case "google-ai":
-        await handleGoogleAI403Error(req, errorPayload);
+        await handle403Error(req, errorPayload);
         break;
       case "aws":
         switch (errorType) {
@@ -895,6 +895,7 @@ async function handleGoogleAIRateLimitError(
 
   // Quota exhaustion indicators in error messages
   const quotaExhaustedMsgs = [
+	/You exceeded your current quota/i,
     /quota exceeded/i,
     /free tier|free_tier/i,
     /quota limit/i
@@ -1000,7 +1001,7 @@ async function handleGoogleAIRateLimitError(
 */
       // Standard rate limiting - just mark as rate limited temporarily
       req.log.debug({ key: req.key.hash, error: text }, "Google API request rate limited, will retry.");
-      keyPool.markRateLimited(req.key);
+      keyPool.disable(req.key!, "quota");
       await reenqueueRequest(req);
       throw new RetryableError("Rate-limited request re-enqueued.");
     }
