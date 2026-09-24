@@ -90,6 +90,7 @@ export class KeyPool {
     if (
       service instanceof OpenAIKeyProvider ||
       service instanceof AnthropicKeyProvider ||
+      service instanceof GoogleAIKeyProvider ||
       service instanceof DeepseekKeyProvider ||
       service instanceof XaiKeyProvider ||
       service instanceof CohereKeyProvider ||

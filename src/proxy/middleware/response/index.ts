@@ -288,6 +288,18 @@ const handleUpstreamErrors: ProxyResHandlerWithBody = async (
       await reenqueueRequest(req);
       throw new RetryableError("Deepseek key has insufficient balance, retrying with different key.");
     }
+    // Google AI - prepayment credits depleted / billing required. The key is
+    // out of quota but still valid, so mark it as over-quota and retry.
+    if (service === "google-ai") {
+      const message = errorPayload.error?.message || "";
+      const isDepletedCredits =
+        /prepayment credits|credits are depleted|billing/i.test(message);
+      if (isDepletedCredits) {
+        keyPool.disable(req.key!, "quota");
+        await reenqueueRequest(req);
+        throw new RetryableError("Google AI key has depleted prepayment credits, retrying with different key.");
+      }
+    }
   } else if (statusCode === 405) {
     // Xai specific - method not allowed, treat as retryable
     if (service === "xai") {
