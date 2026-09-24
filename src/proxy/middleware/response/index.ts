@@ -274,7 +274,7 @@ const handleUpstreamErrors: ProxyResHandlerWithBody = async (
         errorPayload.proxy_note = `The Moonshot API rejected the request. Check the error message for details.`;
         break;
       default:
-        assertNever(service);
+        assertNever(service as never);
     }
   } else if (statusCode === 401) {
     // Universal 401 handling - authentication failed, retry with different key
