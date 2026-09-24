@@ -11,12 +11,12 @@ const KEY_CHECK_PERIOD = 6 * 60 * 60 * 1000; // 3 hours
 const LIST_MODELS_URL =
   "https://generativelanguage.googleapis.com/v1beta/models";
 const GENERATE_CONTENT_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=%KEY%";
-const PRO_MODEL_ID = "gemini-2.5-pro";
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=%KEY%";
+const PRO_MODEL_ID = "gemini-3.1-pro";
 const GENERATE_PRO_CONTENT_URL =
   `https://generativelanguage.googleapis.com/v1beta/models/${PRO_MODEL_ID}:generateContent?key=%KEY%`;
 const IMAGEN_BILLING_TEST_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=%KEY%";
+  "https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=%KEY%";
 
 type ListModelsResponse = {
   models: {
